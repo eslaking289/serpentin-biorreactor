@@ -53,6 +53,12 @@
     $('insightText').textContent=`Carga estimada de ${fmt(qTotal)} kW frente a una capacidad sensible del refrigerante de ${fmt(coolantCapacity)} kW (${sufficient?'margen':'déficit'} de ${fmt(Math.abs(margin))} kW). Área requerida ${fmt(area)} m²; altura helicoidal estimada ${fmt(height)} m.`;
     latest={v,qReaction,qTotal,lmtd,u,area,length,turns,height,coolantCapacity,status};
   }
+  function inputsAreCalculable(){
+    if(!inputs.every(id=>$(id).value.trim()!==''&&$(id).validity.valid))return false;
+    const broth=n('tBroth'), inlet=n('tIn'), outlet=n('tOut');
+    const outer=n('tubeD')/1000, wall=n('wallT')/1000;
+    return broth>inlet&&broth>outlet&&outlet>inlet&&outer-2*wall>0;
+  }
   let timer;
   function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>el.classList.remove('show'),3000);}
   function report(){if(!latest)calculate();if(!latest)return;const r=latest, rows=[
@@ -63,6 +69,9 @@
   }
   $('calculateBtn').addEventListener('click',calculate); $('exportBtn').addEventListener('click',report);
   $('resetBtn').addEventListener('click',()=>{for(const id of inputs)$(id).value=defaults[id];calculate();toast('Se restauraron los valores iniciales.');});
-  for(const id of inputs)$(id).addEventListener('change',calculate);
+  for(const id of inputs){
+    $(id).addEventListener('input',()=>{if(inputsAreCalculable())calculate();});
+    $(id).addEventListener('change',()=>{if(!inputsAreCalculable())calculate();});
+  }
   calculate();
 })();
