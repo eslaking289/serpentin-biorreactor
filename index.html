@@ -41,7 +41,7 @@
         <a class="nav-link active" href="#inicio"><span>▦</span> Panel de diseño</a>
         <a class="nav-link" href="#entradas"><span>◉</span> Condiciones de operación</a>
         <a class="nav-link" href="#resultados"><span>⌁</span> Resultados térmicos</a>
-        <a class="nav-link" href="#metodo"><span>∑</span> Método de cálculo</a>
+        <a class="nav-link" href="#metodologia-completa"><span>∑</span> Metodología completa</a>
       </nav>
       <div class="sidebar-bottom"><div class="offline-card"><span class="offline-icon">◉</span><div><b>Modo local</b><small>Sin conexión ni APIs</small></div><span class="live-dot"></span></div><p>FENÓMENOS DE TRANSPORTE<br>Cuatrimestre sep–dic 2026</p></div>
     </aside>
@@ -98,7 +98,50 @@
           <div class="insight-box"><span class="insight-icon">i</span><div><b id="insightTitle">Lectura del diseño</b><p id="insightText">Los resultados se actualizarán al ingresar las condiciones.</p></div></div>
         </section>
       </div>
-      <section class="method-strip" id="metodo"><div class="method-icon">∑</div><div><span class="section-kicker">CRITERIO DE CÁLCULO</span><h3>Supuestos visibles, resultados trazables</h3><p>El deber térmico suma el calor de reacción y la disipación por agitación. La superficie se calcula con resistencias térmicas en serie y diferencia media logarítmica. Revisa el método y las limitaciones antes de usar resultados para un diseño físico.</p></div><a href="README.md" target="_blank" rel="noopener">Ver metodología completa <span>↗</span></a></section>
+      <section class="method-strip" id="metodo"><div class="method-icon">∑</div><div><span class="section-kicker">CRITERIO DE CÁLCULO</span><h3>Supuestos visibles, resultados trazables</h3><p>El deber térmico suma el calor de reacción y la disipación por agitación. La superficie se calcula con resistencias térmicas en serie y diferencia media logarítmica. Revisa el método y las limitaciones antes de usar resultados para un diseño físico.</p></div><a href="#metodologia-completa">Ver metodología completa <span>↓</span></a></section>
+
+      <section class="panel methodology-panel" id="metodologia-completa" aria-labelledby="methodTitle">
+        <div class="panel-heading method-main-heading"><div><span class="section-kicker">03 / MODELO MATEMÁTICO</span><h2 id="methodTitle">Metodología de cálculo</h2><p>Secuencia, ecuaciones, variables y alcance del modelo de diseño preliminar.</p></div><span class="editable-tag">BASE DE ÁREA EXTERIOR</span></div>
+        <div class="method-intro"><b>Objetivo</b><p>Estimar la carga que debe retirar el serpentín y el área de intercambio requerida suponiendo un caldo perfectamente mezclado a temperatura constante y un refrigerante que se calienta al circular por el tubo.</p></div>
+        <div class="method-grid">
+          <article class="method-card"><div class="method-card-title"><span class="step-number">01</span><div><b>Balance térmico</b><small>Carga de reacción y agitación</small></div></div>
+            <div class="equation">Q<sub>reacción</sub> = |ΔH<sub>r</sub>| · ṅ<sub>s</sub> · f<sub>calor</sub> / 3600</div>
+            <div class="equation">Q<sub>diseño</sub> = Q<sub>reacción</sub> + P<sub>agitación</sub></div>
+            <p>Con ΔH<sub>r</sub> en kJ/mol y consumo de sustrato ṅ<sub>s</sub> en mol/h, la división entre 3600 convierte kJ/h a kW. La potencia de agitación se considera disipada como calor en el caldo.</p>
+          </article>
+          <article class="method-card"><div class="method-card-title"><span class="step-number">02</span><div><b>Fuerza impulsora</b><small>Caldo isotermo y refrigerante variable</small></div></div>
+            <div class="equation">ΔT<sub>caliente</sub> = T<sub>caldo</sub> − T<sub>salida</sub></div>
+            <div class="equation">ΔT<sub>fría</sub> = T<sub>caldo</sub> − T<sub>entrada</sub></div>
+            <div class="equation">ΔT<sub>lm</sub> = (ΔT<sub>fría</sub> − ΔT<sub>caliente</sub>) / ln(ΔT<sub>fría</sub>/ΔT<sub>caliente</sub>)</div>
+            <p>La forma límite cuando las dos diferencias son iguales es su media aritmética. Se exige T<sub>caldo</sub> mayor que ambas temperaturas del refrigerante y T<sub>salida</sub> mayor que T<sub>entrada</sub>.</p>
+          </article>
+          <article class="method-card"><div class="method-card-title"><span class="step-number">03</span><div><b>Resistencias térmicas</b><small>Coeficiente global referido al exterior</small></div></div>
+            <div class="equation equation-tall">1/U<sub>o</sub> = D<sub>o</sub>/(D<sub>i</sub>h<sub>i</sub>) + D<sub>o</sub> ln(D<sub>o</sub>/D<sub>i</sub>)/(2k<sub>pared</sub>) + 1/h<sub>o</sub> + R<sub>f</sub></div>
+            <div class="equation">D<sub>i</sub> = D<sub>o</sub> − 2t<sub>pared</sub></div>
+            <p>Se suman película interior, conducción en pared cilíndrica, película exterior y ensuciamiento. h<sub>i</sub> y h<sub>o</sub> se ingresan en W/(m²·K); k en W/(m·K); dimensiones en m y R<sub>f</sub> en m²·K/W.</p>
+          </article>
+          <article class="method-card"><div class="method-card-title"><span class="step-number">04</span><div><b>Área y longitud</b><small>Dimensionamiento térmico ideal</small></div></div>
+            <div class="equation">A<sub>o</sub> = (1000 · Q<sub>diseño</sub>) / (U<sub>o</sub> · ΔT<sub>lm</sub>)</div>
+            <div class="equation">L = A<sub>o</sub> / (π · D<sub>o</sub>)</div>
+            <p>Q<sub>diseño</sub> está en kW y se multiplica por 1000 para expresarlo en W. El área obtenida es exterior; por eso la longitud se calcula con el perímetro exterior del tubo.</p>
+          </article>
+          <article class="method-card"><div class="method-card-title"><span class="step-number">05</span><div><b>Geometría helicoidal</b><small>Vueltas y altura ocupada aproximadas</small></div></div>
+            <div class="equation">D<sub>hélice</sub> ≈ max(D<sub>tanque</sub> − D<sub>o</sub>, D<sub>o</sub>)</div>
+            <div class="equation">L<sub>vuelta</sub> = √[(π · D<sub>hélice</sub>)² + p²]</div>
+            <div class="equation">N = L/L<sub>vuelta</sub> &nbsp; · &nbsp; H = N · p</div>
+            <p>El paso p se convierte de mm a m. La hélice se considera ideal, circular y de paso constante; el resultado no comprueba holguras, boquillas, soportes ni restricciones del recipiente.</p>
+          </article>
+          <article class="method-card"><div class="method-card-title"><span class="step-number">06</span><div><b>Capacidad del refrigerante</b><small>Comprobación sensible simplificada</small></div></div>
+            <div class="equation">Q<sub>capacidad</sub> = ṁ · C<sub>p</sub> · (T<sub>salida</sub> − T<sub>entrada</sub>)</div>
+            <p>Se usa C<sub>p</sub> = 4180 J/(kg·K) como aproximación para agua y caudal másico ṁ en kg/s. Se compara esta capacidad con Q<sub>diseño</sub>; no es un cálculo acoplado del perfil térmico ni garantiza por sí solo el desempeño del serpentín.</p>
+          </article>
+        </div>
+        <div class="method-reference-grid">
+          <article class="method-note"><h3>Entradas y unidades</h3><p>Calor de reacción: kJ/mol; consumo: mol/h; fracción de calor: adimensional entre 0 y 1; agitación: kW; temperaturas: °C (las diferencias son numéricamente iguales en K); caudal: kg/s; diámetros y espesores de entrada: mm, convertidos internamente a m; paso: mm; coeficientes y propiedades: unidades SI indicadas junto a cada campo.</p></article>
+          <article class="method-note"><h3>Supuestos y limitaciones</h3><ul><li>Estado estacionario, sin acumulación de energía ni pérdidas al ambiente.</li><li>Caldo perfectamente mezclado, con temperatura uniforme y constante.</li><li>Propiedades constantes y coeficientes globales ingresados por el usuario.</li><li>Base molar de sustrato y entalpía de reacción consistentes; el programa no calcula estequiometría ni ΔH<sub>r</sub>.</li><li>El modelo no calcula correlaciones de convección, caída de presión, hidráulica, transferencia de oxígeno, control, materiales, corrosión ni diseño sanitario o mecánico.</li></ul></article>
+        </div>
+        <div class="method-warning"><b>Uso responsable</b><p>Este resultado es una estimación académica preliminar y no una especificación de fabricación u operación. Justifica las propiedades y coeficientes con fuentes técnicas aplicables, valida el balance con un cálculo independiente y solicita revisión de ingeniería antes de tomar decisiones físicas o de seguridad.</p></div>
+      </section>
       <footer>THERMABIO <span>•</span> HERRAMIENTA ACADÉMICA DE DISEÑO <span class="footer-right">100% LOCAL · SIN SERVICIOS EXTERNOS</span></footer>
     </main>
   </div>
