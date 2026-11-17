@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "index.html"
+      - "metodologia.html"
       - "styles.css"
       - "app.js"
       - "robots.txt"
@@ -38,7 +39,7 @@ jobs:
       - name: Prepare site files
         run: |
           mkdir _site
-          cp index.html styles.css app.js robots.txt sitemap.xml googlebe0e85bae0c0e96a.html _site/
+          cp index.html metodologia.html styles.css app.js robots.txt sitemap.xml googlebe0e85bae0c0e96a.html _site/
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:
