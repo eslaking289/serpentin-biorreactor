@@ -47,7 +47,7 @@
     </aside>
 
     <main id="inicio">
-      <header class="topbar"><div class="breadcrumb"><span class="prompt-user">bio@reactor</span>:<span class="prompt-path">~</span>$ <b>thermabio --design-coil</b></div><div class="top-actions"><span class="local-badge"><i></i> LOCAL · OFFLINE</span><button id="resetBtn" class="button button-quiet" type="button">Restablecer</button></div></header>
+      <header class="topbar"><div class="breadcrumb"><span class="prompt-user">bio@reactor</span>:<span class="prompt-path">~</span>$ <b>thermabio --design-coil</b></div><div class="top-actions"><span class="local-badge"><i></i> CÁLCULO EN VIVO · LOCAL</span><button id="resetBtn" class="button button-quiet" type="button">Restablecer</button></div></header>
       <section class="hero"><div><div class="eyebrow"><span class="terminal-prefix">$</span> ./thermabio --steady-state --coil-design</div><h1>Serpentín de enfriamiento</h1><p>Estima la carga térmica de fermentación y dimensiona la superficie de intercambio para tus condiciones de proceso.</p></div><div class="hero-seal"><div class="seal-inner"><span>ΔT</span><small>THERMAL<br>DESIGN</small></div></div></section>
 
       <section class="metrics" aria-label="Indicadores de diseño">
@@ -59,7 +59,7 @@
 
       <div class="workspace-grid">
         <section class="panel input-panel" id="entradas">
-          <div class="panel-heading"><div><span class="section-kicker">01 / PARÁMETROS</span><h2>Condiciones de operación</h2></div><span class="editable-tag">EDITABLE</span></div>
+          <div class="panel-heading"><div><span class="section-kicker">01 / PARÁMETROS</span><h2>Condiciones de operación</h2></div><span class="editable-tag">RECÁLCULO EN VIVO</span></div>
           <div class="form-section"><div class="form-section-title"><span class="step-number">A</span><div><b>Generación de calor</b><small>Balance de energía de fermentación</small></div></div>
             <div class="field-grid">
               <label class="field"><span>Calor de reacción, |ΔH<sub>r</sub>|</span><span class="input-wrap"><input id="dh" type="number" min="0" step="1" value="460"><em>kJ/mol</em></span><small>Base molar de sustrato consumido</small></label>
@@ -88,7 +88,7 @@
               <label class="field"><span>Separación vertical entre vueltas</span><span class="input-wrap"><input id="pitch" type="number" min="1" step="1" value="100"><em>mm</em></span></label>
             </div>
           </div>
-          <div class="input-footer"><span><span class="asterisk">*</span> Los resultados dependen de los supuestos y propiedades ingresados.</span><button id="calculateBtn" class="button button-primary" type="button">Actualizar diseño <span>↗</span></button></div>
+          <div class="input-footer"><span><span class="asterisk">*</span> Los resultados se actualizan al editar valores válidos.</span><button id="calculateBtn" class="button button-primary" type="button">Recalcular <span>↗</span></button></div>
         </section>
 
         <section class="panel result-panel" id="resultados">
