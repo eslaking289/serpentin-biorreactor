@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b211d">
+  <meta name="description" content="Herramienta local para estimar la carga térmica y dimensionar un serpentín de enfriamiento para un biorreactor aerobio.">
+  <title>ThermaBio | Diseño térmico</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#inicio" aria-label="ThermaBio, inicio">
+        <span class="brand-mark">TB</span><span><strong>ThermaBio</strong><small>INGENIERÍA DE PROCESOS</small></span>
+      </a>
+      <div class="project-label">PROYECTO ACADÉMICO <span class="status-dot"></span></div>
+      <nav aria-label="Navegación principal">
+        <a class="nav-link active" href="#inicio"><span>▦</span> Panel de diseño</a>
+        <a class="nav-link" href="#entradas"><span>◉</span> Condiciones de operación</a>
+        <a class="nav-link" href="#resultados"><span>⌁</span> Resultados térmicos</a>
+        <a class="nav-link" href="#metodo"><span>∑</span> Método de cálculo</a>
+      </nav>
+      <div class="sidebar-bottom"><div class="offline-card"><span class="offline-icon">◉</span><div><b>Modo local</b><small>Sin conexión ni APIs</small></div><span class="live-dot"></span></div><p>FENÓMENOS DE TRANSPORTE<br>Cuatrimestre sep–dic 2026</p></div>
+    </aside>
+
+    <main id="inicio">
+      <header class="topbar"><div class="breadcrumb">Herramientas <span>/</span> <b>Diseño de serpentín</b></div><div class="top-actions"><span class="local-badge"><i></i> CÁLCULO LOCAL</span><button id="resetBtn" class="button button-quiet" type="button">Restablecer</button></div></header>
+      <section class="hero"><div><div class="eyebrow">BIORREACTOR AEROBIO <span>•</span> DISEÑO TÉRMICO</div><h1>Serpentín de enfriamiento</h1><p>Estima la carga térmica de fermentación y dimensiona la superficie de intercambio para tus condiciones de proceso.</p></div><div class="hero-seal"><div class="seal-inner"><span>ΔT</span><small>THERMAL<br>DESIGN</small></div></div></section>
+
+      <section class="metrics" aria-label="Indicadores de diseño">
+        <article class="metric-card"><div class="metric-top"><span>CARGA DE ENFRIAMIENTO</span><span class="metric-icon warm">↘</span></div><div class="metric-value" id="metricDuty">— <small>kW</small></div><div class="metric-note" id="metricDutyNote">Balance térmico requerido</div></article>
+        <article class="metric-card"><div class="metric-top"><span>ÁREA REQUERIDA</span><span class="metric-icon teal">▤</span></div><div class="metric-value" id="metricArea">— <small>m²</small></div><div class="metric-note">Superficie de intercambio</div></article>
+        <article class="metric-card"><div class="metric-top"><span>LONGITUD DE TUBO</span><span class="metric-icon blue">⌁</span></div><div class="metric-value" id="metricLength">— <small>m</small></div><div class="metric-note" id="metricTurns">— vueltas estimadas</div></article>
+        <article class="metric-card"><div class="metric-top"><span>ESTADO DEL DISEÑO</span><span class="metric-icon green">✓</span></div><div class="metric-value state-value" id="metricState">—</div><div class="metric-note" id="metricStateNote">Validación térmica</div></article>
+      </section>
+
+      <div class="workspace-grid">
+        <section class="panel input-panel" id="entradas">
+          <div class="panel-heading"><div><span class="section-kicker">01 / PARÁMETROS</span><h2>Condiciones de operación</h2></div><span class="editable-tag">EDITABLE</span></div>
+          <div class="form-section"><div class="form-section-title"><span class="step-number">A</span><div><b>Generación de calor</b><small>Balance de energía de fermentación</small></div></div>
+            <div class="field-grid">
+              <label class="field"><span>Calor de reacción, |ΔH<sub>r</sub>|</span><span class="input-wrap"><input id="dh" type="number" min="0" step="1" value="460"><em>kJ/mol</em></span><small>Base molar de sustrato consumido</small></label>
+              <label class="field"><span>Consumo de sustrato</span><span class="input-wrap"><input id="substrateRate" type="number" min="0" step="0.1" value="2.4"><em>mol/h</em></span><small>Velocidad global de reacción</small></label>
+              <label class="field"><span>Potencia de agitación</span><span class="input-wrap"><input id="agitation" type="number" min="0" step="0.1" value="1.2"><em>kW</em></span><small>Potencia disipada al caldo</small></label>
+              <label class="field"><span>Factor de calor metabólico al caldo</span><span class="input-wrap"><input id="heatFactor" type="number" min="0" max="1" step="0.01" value="1"><em>fracción</em></span><small>Fracción de |ΔHᵣ| que se libera como calor</small></label>
+            </div>
+          </div>
+          <div class="form-section"><div class="form-section-title"><span class="step-number">B</span><div><b>Temperaturas del proceso</b><small>Fuerza impulsora de transferencia</small></div></div>
+            <div class="field-grid">
+              <label class="field"><span>Temperatura del caldo</span><span class="input-wrap"><input id="tBroth" type="number" step="0.5" value="30"><em>°C</em></span></label>
+              <label class="field"><span>Entrada del refrigerante</span><span class="input-wrap"><input id="tIn" type="number" step="0.5" value="10"><em>°C</em></span></label>
+              <label class="field"><span>Salida del refrigerante</span><span class="input-wrap"><input id="tOut" type="number" step="0.5" value="18"><em>°C</em></span></label>
+              <label class="field"><span>Caudal de refrigerante</span><span class="input-wrap"><input id="coolantFlow" type="number" min="0" step="0.1" value="0.25"><em>kg/s</em></span></label>
+            </div>
+          </div>
+          <div class="form-section"><div class="form-section-title"><span class="step-number">C</span><div><b>Transferencia y geometría</b><small>Coeficientes y dimensiones del serpentín</small></div></div>
+            <div class="field-grid">
+              <label class="field"><span>Coeficiente lado caldo, h<sub>i</sub></span><span class="input-wrap"><input id="hBroth" type="number" min="1" step="10" value="500"><em>W/m²·K</em></span></label>
+              <label class="field"><span>Coeficiente lado refrigerante, h<sub>o</sub></span><span class="input-wrap"><input id="hCoolant" type="number" min="1" step="10" value="900"><em>W/m²·K</em></span></label>
+              <label class="field"><span>Conductividad de pared, k</span><span class="input-wrap"><input id="wallK" type="number" min="0.01" step="1" value="16"><em>W/m·K</em></span></label>
+              <label class="field"><span>Espesor de pared</span><span class="input-wrap"><input id="wallT" type="number" min="0" step="0.1" value="1"><em>mm</em></span></label>
+              <label class="field"><span>Factor de ensuciamiento total</span><span class="input-wrap"><input id="fouling" type="number" min="0" step="0.00001" value="0.0002"><em>m²·K/W</em></span></label>
+              <label class="field"><span>Diámetro exterior del tubo</span><span class="input-wrap"><input id="tubeD" type="number" min="1" step="1" value="50"><em>mm</em></span></label>
+              <label class="field"><span>Diámetro del biorreactor</span><span class="input-wrap"><input id="tankD" type="number" min="0.1" step="0.1" value="1.2"><em>m</em></span></label>
+              <label class="field"><span>Separación vertical entre vueltas</span><span class="input-wrap"><input id="pitch" type="number" min="1" step="1" value="100"><em>mm</em></span></label>
+            </div>
+          </div>
+          <div class="input-footer"><span><span class="asterisk">*</span> Los resultados dependen de los supuestos y propiedades ingresados.</span><button id="calculateBtn" class="button button-primary" type="button">Actualizar diseño <span>↗</span></button></div>
+        </section>
+
+        <section class="panel result-panel" id="resultados">
+          <div class="panel-heading"><div><span class="section-kicker">02 / RESUMEN TÉRMICO</span><h2>Diseño propuesto</h2></div><button id="exportBtn" class="button button-outline" type="button">↓ <span>Exportar informe</span></button></div>
+          <div class="result-chart-card"><div class="chart-heading"><div><b>Balance de carga térmica</b><small>Contribuciones al deber de enfriamiento</small></div><span class="chart-unit">kW</span></div><div class="chart-content"><div class="chart-legend"><div><i class="legend-reaction"></i><span>Calor de reacción</span><b id="legendReaction">—</b></div><div><i class="legend-agit"></i><span>Agitación</span><b id="legendAgitation">—</b></div><div class="legend-total"><span>Deber total</span><b id="legendTotal">—</b></div></div><div class="bar-chart" id="barChart" aria-label="Gráfico de contribuciones de calor"><div class="bar-row"><span>Reacción</span><div class="bar-track"><i id="barReaction"></i></div></div><div class="bar-row"><span>Agitación</span><div class="bar-track"><i id="barAgitation"></i></div></div><div class="bar-row"><span>Q requerido</span><div class="bar-track total-track"><i id="barTotal"></i></div></div></div></div></div>
+          <div class="result-list"><div class="result-row"><div><b>Coeficiente global, U</b><small>Base de área exterior del tubo</small></div><strong id="outU">— <small>W/m²·K</small></strong></div><div class="result-row"><div><b>Diferencia media logarítmica, ΔT<sub>lm</sub></b><small>Caldo a temperatura constante</small></div><strong id="outLmtD">— <small>K</small></strong></div><div class="result-row"><div><b>Área de transferencia requerida</b><small>Q / (U · ΔT<sub>lm</sub>)</small></div><strong id="outArea">— <small>m²</small></strong></div><div class="result-row"><div><b>Longitud de tubo</b><small>Geometría helicoidal, diámetro exterior</small></div><strong id="outLength">— <small>m</small></strong></div><div class="result-row"><div><b>Número de vueltas</b><small>Altura ocupada estimada</small></div><strong id="outTurns">— <small>vueltas</small></strong></div></div>
+          <div class="insight-box"><span class="insight-icon">i</span><div><b id="insightTitle">Lectura del diseño</b><p id="insightText">Los resultados se actualizarán al ingresar las condiciones.</p></div></div>
+        </section>
+      </div>
+      <section class="method-strip" id="metodo"><div class="method-icon">∑</div><div><span class="section-kicker">CRITERIO DE CÁLCULO</span><h3>Supuestos visibles, resultados trazables</h3><p>El deber térmico suma el calor de reacción y la disipación por agitación. La superficie se calcula con resistencias térmicas en serie y diferencia media logarítmica. Revisa el método y las limitaciones antes de usar resultados para un diseño físico.</p></div><a href="README.md" target="_blank" rel="noopener">Ver metodología completa <span>↗</span></a></section>
+      <footer>THERMABIO <span>•</span> HERRAMIENTA ACADÉMICA DE DISEÑO <span class="footer-right">100% LOCAL · SIN SERVICIOS EXTERNOS</span></footer>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
