@@ -48,3 +48,35 @@ main{background:#0d110f}.topbar{border-color:#29312c}.breadcrumb,.breadcrumb b{c
 .status-dot,.live-dot,.local-badge i{animation:status-pulse 2.6s ease-in-out infinite}
 .input-wrap:focus-within{transition:border-color .16s ease,box-shadow .16s ease}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+/* Light terminal palette */
+:root{color-scheme:light;--ink:#202923;--muted:#69766d;--line:#dce3dd;--paper:#f3f5f3;--green:#315d43;--mint:#dfe9df;--teal:#587665;--amber:#8b7443;--blue:#617a78;--white:#fff;--shadow:0 4px 16px #1d2a2010}
+body,main{background:#f3f5f3;color:#202923}
+.sidebar{background:#e8ede9;color:#263129;border-color:#d4ddd6}
+.brand-mark{background:#d7e2d7;color:#315d43;border-color:#cbd8cd}
+.brand strong,.nav-link,.project-label,.sidebar-bottom p{color:#35443a}
+.brand small,.project-label,.sidebar-bottom p{color:#718075}
+.status-dot,.live-dot,.local-badge i{background:#53815c;box-shadow:none}
+.nav-link.active{background:#dce6dd;color:#264431;border-left-color:#5c8962}.nav-link:hover{background:#dde5df;color:#24392b}
+.offline-card{background:#f2f5f2;border-color:#d2ddd4}.offline-icon,.offline-card b{color:#42664a}.offline-card small{color:#738077}
+.topbar{border-color:#dce3dd}.breadcrumb,.breadcrumb b{color:#56635a}.prompt-user,.terminal-prefix{color:#4d7957}.prompt-path{color:#748077}
+.local-badge{background:#edf2ed;border-color:#d8e1d9;color:#526257}
+.hero h1,.panel-heading h2,.metric-value,.section-title,.result-row>div b,.method-strip h3{color:#222c25}
+.hero p,.metric-note,.panel-heading p,.field label,.field-help,.chart-unit,.chart-legend div,.bar-row,.result-row>div small,.method-strip p,footer{color:#6e7a71}
+.hero-seal{background:#edf2ed;border-color:#d6e0d7}.seal-inner{background:#dfe9df;border-color:#cbd9cd;color:#42694c}
+.metric-card,.panel,.method-strip,.result-chart-card{background:#fff;border-color:#dfe5e0;box-shadow:0 4px 16px #1d2a2009}
+.metric-card:hover,.panel:hover{border-color:#b6c9b9;box-shadow:0 6px 18px #1d2a2012}
+.metric-icon{background:#edf2ed!important;color:#58735b!important}
+.metric-value small,.result-row>strong small{color:#728077}
+.field input,.field select,.field textarea{background:#fff;border-color:#d6dfd8;color:#27342a}
+.field input:focus,.field select:focus,.field textarea:focus{outline:1px solid #729477;border-color:#729477;box-shadow:0 0 0 2px #72947722}
+.field input::placeholder{color:#98a39a}.field select option{background:#fff;color:#27342a}
+.button-primary{background:#426e4d;color:#fff;border-color:#426e4d}.button-primary:hover{background:#527f5c}
+.button-outline,.button-quiet{background:#f3f6f3;color:#4d6251;border-color:#d7e0d8}.button-outline:hover,.button-quiet:hover{background:#e8eee9}
+.chart-legend b,.legend-total b,.result-row>strong{color:#365940}.legend-reaction,.bar-track i,.bar-track i#barAgitation,.bar-track.total-track i{background:#63886a}.legend-agit{background:#a99a73}.bar-track{background:#e7ece8}
+.result-row{border-color:#e3e8e4}.legend-total{border-color:#dfe5e0!important}.insight-box{background:#f0f5f0;border-color:#dce7dd}.insight-box b{color:#45634a}.insight-box p{color:#6f7c71}.insight-icon,.method-icon{background:#e2ebe3;color:#4f7555}
+.method-strip>a{color:#426b4c}.method-strip>a:hover{color:#294e33}.toast{background:#304d36;color:#fff;border-color:#648168}
+.method-intro{background:#f0f5f0;border-left-color:#64886a}.method-intro b{color:#304a35}.method-intro p{color:#59685c}
+.method-card,.method-note{background:#fafcfb;border-color:#dfe6e0}.method-card-title b{color:#29352c}.method-card-title small{color:#738077}.method-card-title .step-number{border-color:#d6e0d7;color:#4f7354}
+.equation{background:#f0f4f0;border-color:#dce4dd;color:#35583c}.method-card p,.method-note p,.method-note li{color:#657269}.method-note h3{color:#34483a}
+.method-warning{background:#f7f4eb;border-color:#e6dcc2}.method-warning b{color:#6e5b32}.method-warning p{color:#746b58}
+@media(max-width:650px){.sidebar{background:#e8ede9;border-bottom-color:#d4ddd6}}
