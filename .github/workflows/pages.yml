@@ -8,6 +8,7 @@ on:
       - "metodologia.html"
       - "styles.css"
       - "app.js"
+      - "core.js"
       - "robots.txt"
       - "sitemap.xml"
       - "googlebe0e85bae0c0e96a.html"
@@ -39,7 +40,7 @@ jobs:
       - name: Prepare site files
         run: |
           mkdir _site
-          cp index.html metodologia.html styles.css app.js robots.txt sitemap.xml googlebe0e85bae0c0e96a.html _site/
+          cp index.html metodologia.html styles.css core.js app.js robots.txt sitemap.xml googlebe0e85bae0c0e96a.html _site/
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
         with:

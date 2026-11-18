@@ -20,9 +20,9 @@ Se aceptó que el usuario introduzca la entalpía molar, la tasa de consumo y co
 
 La potencia térmica metabólica se estima como el producto de magnitud de entalpía molar, consumo molar y fracción de calor liberado al caldo, con conversión de horas a segundos. Se suma la potencia de agitación disipada.
 
-El coeficiente global con base en el área externa se obtiene sumando resistencias de película interior, conducción cilíndrica de pared, película exterior y ensuciamiento. El área usa la diferencia media logarítmica entre las temperaturas del caldo (uniforme) y las temperaturas de entrada/salida del refrigerante. La longitud se obtiene dividiendo área entre perímetro externo por longitud. Las vueltas y altura son una aproximación geométrica helicoidal.
+El refrigerante circula por el interior del tubo y el caldo baña el exterior. El caudal requerido se calcula con el balance sensible para el salto de temperatura especificado. Ese caudal permite estimar velocidad, Reynolds, Prandtl y el coeficiente interior con Gnielinski y una corrección helicoidal aproximada. El coeficiente global referido al área exterior suma las resistencias de película interior, conducción cilíndrica de pared, película exterior y ensuciamiento. El área usa la diferencia media logarítmica entre el caldo uniforme y las temperaturas de entrada/salida del refrigerante. Las vueltas y altura son una aproximación geométrica helicoidal.
 
-El balance sensible del refrigerante usa `Cp = 4.18 kJ/(kg·K)` por omisión, aproximación para agua líquida. El usuario debe modificarla en el código si corresponde a otra sustancia. Las ecuaciones detalladas y unidades están en `README.md`.
+El balance sensible usa propiedades editables del refrigerante; los valores por defecto aproximan agua líquida. El usuario debe justificar los datos elegidos. La tasa molar y la entalpía deben corresponder a la misma especie de referencia; los valores por defecto usan oxígeno. Las ecuaciones y unidades están en `README.md` y en la metodología de la interfaz.
 
 ## 4. Registro de apoyo con IA
 
@@ -67,7 +67,7 @@ La verificación académica aún debe completarse antes de presentar resultados 
 
 ## 7. Limitaciones conocidas y trabajo futuro
 
-No se incluyen un balance de materia/estequiometría integrado, cálculo correlacional de transferencia convectiva, capacidad calorífica editable dentro de la interfaz, perfil acoplado del refrigerante, caída de presión, dimensionamiento hidráulico, transferencia de oxígeno, dinámica de control ni diseño mecánico. Como mejoras, el equipo puede añadir cálculo estequiométrico con validación de elementos, correlaciones documentadas para la configuración elegida y una comparación de escenarios verificada experimentalmente o con fuentes técnicas.
+No se incluye un balance de materia/estequiometría integrado, cálculo de h_o desde el movimiento del caldo, perfil acoplado del refrigerante, pérdidas de presión helicoidales y locales, diseño hidráulico completo, transferencia de oxígeno, dinámica de control ni diseño mecánico. h_i y la caída de presión son estimaciones correlacionales con alcance limitado. Como trabajo futuro, se recomienda validar el caso de referencia con un cálculo independiente, ampliar la correlación hidráulica para hélices y documentar bibliografía aplicable.
 
 ## 8. Guion breve para la demostración
 
@@ -76,3 +76,7 @@ No se incluyen un balance de materia/estequiometría integrado, cálculo correla
 3. Modificar una variable y describir cómo cambia la carga, el área y la geometría propuesta.
 4. Explicar qué representan las resistencias térmicas y cómo se estimaron los coeficientes introducidos.
 5. Exportar el CSV y exponer las hipótesis, pruebas independientes y límites de uso.
+
+## 9. Correcciones de la segunda versión
+
+Se invirtieron los lados de transferencia: ahora el refrigerante va por dentro del tubo y el caldo por fuera, como en un serpentín real. El caudal de refrigerante pasó de dato supuesto a resultado (m = Q / (Cp ΔT)), porque antes la ΔTlm y la capacidad sensible podían ser incompatibles. El coeficiente interior se calcula con Gnielinski y corrección helicoidal. La hélice deja holgura a la pared y se valida que el paso no sea menor que el diámetro del tubo. Se quitó el `step` rígido de los campos, que invalidaba valores como 30.3 °C. Los valores por defecto se ajustaron a una carga de unos 7.6 kW. Pendiente: contrastar el caso de referencia con un cálculo manual independiente.

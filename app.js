@@ -1,77 +1,70 @@
 (() => {
   'use strict';
   const $ = id => document.getElementById(id);
-  const inputs = ['dh','substrateRate','agitation','heatFactor','tBroth','tIn','tOut','coolantFlow','hBroth','hCoolant','wallK','wallT','fouling','tubeD','tankD','pitch'];
+  const inputs = ['dh','substrateRate','agitation','heatFactor','tBroth','tIn','tOut','coolantFlow','cp','rho','mu','kf','hBroth','wallK','wallT','fouling','tubeD','tankD','clearance','pitch'];
   const defaults = Object.fromEntries(inputs.map(id => [id, $(id).value]));
-  let latest = null;
-  const n = id => Number($(id).value);
-  const fmt = (x, digits=2) => Number.isFinite(x) ? x.toLocaleString('es-MX',{minimumFractionDigits:digits,maximumFractionDigits:digits}) : '—';
-  const show = (id, value) => { $(id).innerHTML = value; };
-  function calculate() {
-    const v = Object.fromEntries(inputs.map(id => [id,n(id)]));
-    const nonnegative = ['dh','substrateRate','agitation','coolantFlow','fouling'];
+  let latest = null, timer;
+  const fmt = (x, d = 2) => Number.isFinite(x) ? x.toLocaleString('es-MX', { minimumFractionDigits: d, maximumFractionDigits: d }) : '—';
+  const show = (id, html) => { $(id).innerHTML = html; };
+  function toast(m) { const el = $('toast'); el.textContent = m; el.classList.add('show'); clearTimeout(timer); timer = setTimeout(() => el.classList.remove('show'), 3000); }
+  function readValues() {
+    const v = {};
     for (const id of inputs) {
-      const el=$(id), min=el.min===''?-Infinity:Number(el.min), max=el.max===''?Infinity:Number(el.max);
-      if (!Number.isFinite(v[id]) || v[id]<min || v[id]>max) { el.focus(); el.setAttribute('aria-invalid','true'); toast('Revisa los valores: hay un dato fuera del rango permitido.'); return; }
-      el.removeAttribute('aria-invalid');
+      const el = $(id), x = Number(el.value);
+      const min = el.min === '' ? -Infinity : Number(el.min), max = el.max === '' ? Infinity : Number(el.max);
+      if (el.value.trim() === '' || !Number.isFinite(x) || x < min || x > max) { el.setAttribute('aria-invalid', 'true'); return { bad: el }; }
+      el.removeAttribute('aria-invalid'); v[id] = x;
     }
-    const problems=[];
-    if (v.tBroth<=v.tIn || v.tBroth<=v.tOut) problems.push('La temperatura del caldo debe ser mayor que ambas temperaturas del refrigerante.');
-    if (v.tOut<=v.tIn) problems.push('La salida del refrigerante debe ser mayor que su entrada.');
-    if (problems.length) { toast(problems[0]); $('metricState').textContent='Revisar datos'; $('metricStateNote').textContent='Perfil de temperatura no válido'; $('insightTitle').textContent='Condiciones no válidas'; $('insightText').textContent=problems.join(' '); return; }
-    const qReaction=v.dh*v.substrateRate*v.heatFactor/3600;
-    const qTotal=qReaction+v.agitation;
-    const dt1=v.tBroth-v.tOut, dt2=v.tBroth-v.tIn;
-    const lmtd=Math.abs(dt1-dt2)<1e-9 ? (dt1+dt2)/2 : (dt2-dt1)/Math.log(dt2/dt1);
-    const doTube=v.tubeD/1000, wall=v.wallT/1000;
-    const diTube=doTube-2*wall;
-    if (diTube<=0) { toast('El espesor de pared no puede ser mayor que el radio del tubo.'); return; }
-    // Resistances are on the outer-area basis: Do/(Di hi) + Do ln(Do/Di)/(2k) + 1/ho + Rf.
-    const rInner=doTube/(diTube*v.hBroth), rWall=doTube*Math.log(doTube/diTube)/(2*v.wallK), rOuter=1/v.hCoolant;
-    const u=1/(rInner+rWall+rOuter+v.fouling);
-    const area=qTotal*1000/(u*lmtd);
-    const length=area/(Math.PI*doTube);
-    const coilD=Math.max(v.tankD-doTube,doTube);
-    const turnPitch=v.pitch/1000;
-    const turnLength=Math.sqrt((Math.PI*coilD)**2+turnPitch**2);
-    const turns=length/turnLength;
-    const height=turns*turnPitch;
-    const coolantCapacity=v.coolantFlow*4180*(v.tOut-v.tIn)/1000;
-    const sufficient=coolantCapacity>=qTotal;
-    const status=sufficient?'Capacidad suficiente':'Revisar refrigeración';
-    const note=sufficient?'Caudal de refrigerante suficiente':'Aumenta el caudal o reduce la carga';
-    show('metricDuty',`${fmt(qTotal)} <small>kW</small>`); show('metricArea',`${fmt(area)} <small>m²</small>`);
-    show('metricLength',`${fmt(length)} <small>m</small>`); show('metricTurns',`${fmt(turns,1)} vueltas · ${fmt(height)} m de altura`);
-    $('metricState').textContent=status; $('metricStateNote').textContent=note;
-    show('legendReaction',`${fmt(qReaction)} kW`); show('legendAgitation',`${fmt(v.agitation)} kW`); show('legendTotal',`${fmt(qTotal)} kW`);
-    show('outU',`${fmt(u,0)} <small>W/m²·K</small>`); show('outLmtD',`${fmt(lmtd)} <small>K</small>`);
-    show('outArea',`${fmt(area)} <small>m²</small>`); show('outLength',`${fmt(length)} <small>m</small>`); show('outTurns',`${fmt(turns,1)} <small>vueltas</small>`);
-    const max=Math.max(qTotal,qReaction,v.agitation,0.001);
-    $('barReaction').style.width=`${Math.max(2,qReaction/max*100)}%`; $('barAgitation').style.width=`${Math.max(2,v.agitation/max*100)}%`; $('barTotal').style.width='100%';
-    const margin=coolantCapacity-qTotal;
-    $('insightTitle').textContent=sufficient?'Capacidad térmica disponible':'Capacidad de refrigeración limitada';
-    $('insightText').textContent=`Carga estimada de ${fmt(qTotal)} kW frente a una capacidad sensible del refrigerante de ${fmt(coolantCapacity)} kW (${sufficient?'margen':'déficit'} de ${fmt(Math.abs(margin))} kW). Área requerida ${fmt(area)} m²; altura helicoidal estimada ${fmt(height)} m.`;
-    latest={v,qReaction,qTotal,lmtd,u,area,length,turns,height,coolantCapacity,status};
+    return { v };
   }
-  function inputsAreCalculable(){
-    if(!inputs.every(id=>$(id).value.trim()!==''&&$(id).validity.valid))return false;
-    const broth=n('tBroth'), inlet=n('tIn'), outlet=n('tOut');
-    const outer=n('tubeD')/1000, wall=n('wallT')/1000;
-    return broth>inlet&&broth>outlet&&outlet>inlet&&outer-2*wall>0;
+  function calculate(quiet) {
+    latest = null;
+    const { v, bad } = readValues();
+    if (bad) {
+      if (!quiet) { bad.focus(); toast('Revisa los valores: hay un dato fuera del rango permitido.'); }
+      else { $('metricState').textContent = 'Entrada pendiente'; $('metricStateNote').textContent = 'Completa un valor válido'; $('insightTitle').textContent = 'Esperando datos válidos'; $('insightText').textContent = 'El diseño se actualizará en cuanto completes la entrada.'; }
+      return;
+    }
+    const r = ThermaCore.design(v);
+    if (r.errors) {
+      if (!quiet) toast(r.errors[0]);
+      $('metricState').textContent = 'Revisar datos'; $('metricStateNote').textContent = 'Datos incompatibles';
+      $('insightTitle').textContent = 'Condiciones no válidas'; $('insightText').textContent = r.errors.join(' '); return;
+    }
+    const status = r.sufficient ? 'Caudal suficiente' : 'Revisar refrigeración';
+    show('metricDuty', `${fmt(r.qTotal)} <small>kW</small>`); show('metricArea', `${fmt(r.area)} <small>m²</small>`);
+    show('metricLength', `${fmt(r.length)} <small>m</small>`); show('metricTurns', `${fmt(r.turns, 1)} vueltas · ${fmt(r.height)} m de altura`);
+    $('metricState').textContent = status;
+    $('metricStateNote').textContent = r.sufficient ? 'Caudal disponible ≥ requerido' : 'Caudal disponible menor que el requerido';
+    show('legendReaction', `${fmt(r.qReaction)} kW`); show('legendAgitation', `${fmt(v.agitation)} kW`); show('legendTotal', `${fmt(r.qTotal)} kW`);
+    show('outU', `${fmt(r.u, 0)} <small>W/m²·K</small>`); show('outLmtD', `${fmt(r.lmtd)} <small>K</small>`);
+    show('outArea', `${fmt(r.area)} <small>m²</small>`); show('outLength', `${fmt(r.length)} <small>m</small>`); show('outTurns', `${fmt(r.turns, 1)} <small>vueltas</small>`);
+    show('outFlow', `${fmt(r.mReq, 3)} <small>kg/s</small>`); show('outRe', `${fmt(r.Re, 0)} <small>${r.regime} · ${fmt(r.vel)} m/s</small>`);
+    show('outHi', `${fmt(r.hi, 0)} <small>W/m²·K</small>`); show('outDp', `${fmt(r.dP / 1000)} <small>kPa</small>`);
+    const max = Math.max(r.qTotal, 0.001);
+    $('barReaction').style.width = `${Math.max(2, r.qReaction / max * 100)}%`; $('barAgitation').style.width = `${Math.max(2, v.agitation / max * 100)}%`; $('barTotal').style.width = '100%';
+    $('insightTitle').textContent = r.sufficient ? 'Caudal de refrigerante suficiente' : 'Caudal de refrigerante insuficiente';
+    let warn = '';
+    if (!r.correlationValid) warn += ' Las propiedades o el Reynolds quedan fuera del intervalo recomendado para Gnielinski (Re 3000–5×10⁶; Pr 0.5–2000); hᵢ es solo orientativo.';
+    else if (r.regime !== 'turbulento') warn += ` El flujo interior es ${r.regime}; el cálculo de hᵢ en transición es aproximado.`;
+    $('insightText').innerHTML = `Carga de ${fmt(r.qTotal)} kW. Se requieren ${fmt(r.mReq, 3)} kg/s de refrigerante frente a ${fmt(v.coolantFlow, 3)} kg/s disponibles (${fmt(r.flowRatio * 100, 0)} %). Área ${fmt(r.area)} m²; hélice de ${fmt(r.Dh)} m de diámetro y ${fmt(r.height)} m de altura.${warn}`;
+    latest = { v, r, status };
   }
-  let timer;
-  function toast(message){const el=$('toast');el.textContent=message;el.classList.add('show');clearTimeout(timer);timer=setTimeout(()=>el.classList.remove('show'),3000);}
-  function report(){if(!latest)calculate();if(!latest)return;const r=latest, rows=[
-    ['THERMABIO — INFORME DE DISEÑO TÉRMICO',''],['Fecha local',new Date().toLocaleString('es-MX')],['Estado',r.status],['',''],['BALANCE DE ENERGÍA',''],['Calor de reacción (kW)',fmt(r.qReaction)],['Potencia de agitación (kW)',fmt(r.v.agitation)],['Carga total de enfriamiento (kW)',fmt(r.qTotal)],['Capacidad sensible del refrigerante (kW)',fmt(r.coolantCapacity)],['',''],['TRANSFERENCIA Y GEOMETRÍA',''],['Coeficiente global U (W/m²·K)',fmt(r.u,1)],['ΔT logarítmica media (K)',fmt(r.lmtd)],['Área requerida (m²)',fmt(r.area)],['Longitud de tubo (m)',fmt(r.length)],['Vueltas estimadas',fmt(r.turns,1)],['Altura helicoidal estimada (m)',fmt(r.height)],['',''],['Supuestos','Estado estacionario; caldo perfectamente mezclado a temperatura constante; cp del refrigerante = 4.18 kJ/kg·K; resistencias térmicas en serie referidas al área exterior; flujo de calor de reacción calculado con |ΔHr| ingresado por el usuario.'],['Advertencia','Estimación académica preliminar. Verifique estequiometría, correlaciones, ensuciamiento, hidráulica, materiales, presión y seguridad antes de construcción.']
-    ];
-    const csv='\uFEFF'+rows.map(row=>row.map(cell=>'"'+String(cell).replaceAll('"','""')+'"').join(',')).join('\r\n');
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='informe-thermabio.csv';a.click();URL.revokeObjectURL(a.href);toast('Informe descargado en formato CSV.');
+  function report() {
+    calculate(false); if (!latest) return;
+    const { v, r } = latest, g = x => Number(x.toPrecision(6));
+    const rows = [['Parámetro', 'Valor', 'Unidad'], ['Fecha', new Date().toLocaleString('es-MX'), ''], ['Estado', latest.status, '']];
+    const units = { dh: 'kJ/mol', substrateRate: 'mol/h', agitation: 'kW', heatFactor: '-', tBroth: '°C', tIn: '°C', tOut: '°C', coolantFlow: 'kg/s', cp: 'J/kg·K', rho: 'kg/m³', mu: 'mPa·s', kf: 'W/m·K', hBroth: 'W/m²·K', wallK: 'W/m·K', wallT: 'mm', fouling: 'm²·K/W', tubeD: 'mm', tankD: 'm', clearance: 'mm', pitch: 'mm' };
+    for (const id of inputs) rows.push(['Entrada: ' + id, v[id], units[id]]);
+    const out = [['Q reacción', r.qReaction, 'kW'], ['Q total', r.qTotal, 'kW'], ['ΔT log. media', r.lmtd, 'K'], ['Caudal requerido', r.mReq, 'kg/s'], ['Velocidad interior', r.vel, 'm/s'], ['Reynolds', r.Re, '-'], ['Prandtl', r.Pr, '-'], ['h interior', r.hi, 'W/m²·K'], ['U exterior', r.u, 'W/m²·K'], ['Área', r.area, 'm²'], ['Longitud', r.length, 'm'], ['Diámetro de hélice', r.Dh, 'm'], ['Vueltas', r.turns, '-'], ['Altura', r.height, 'm'], ['Caída de presión', r.dP, 'Pa']];
+    for (const [k, x, u] of out) rows.push(['Resultado: ' + k, g(x), u]);
+    rows.push(['Advertencia', 'Estimación académica preliminar; verificar correlaciones, ensuciamiento y seguridad antes de construir.', '']);
+    const csv = '\uFEFF' + rows.map(row => row.map(c => '"' + String(c).replaceAll('"', '""') + '"').join(',')).join('\r\n');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+    a.download = 'informe-thermabio.csv'; a.click(); URL.revokeObjectURL(a.href); toast('Informe descargado en formato CSV.');
   }
-  $('calculateBtn').addEventListener('click',calculate); $('exportBtn').addEventListener('click',report);
-  $('resetBtn').addEventListener('click',()=>{for(const id of inputs)$(id).value=defaults[id];calculate();toast('Se restauraron los valores iniciales.');});
-  for(const id of inputs){
-    $(id).addEventListener('input',()=>{if(inputsAreCalculable())calculate();});
-    $(id).addEventListener('change',()=>{if(!inputsAreCalculable())calculate();});
-  }
-  calculate();
+  $('calculateBtn').addEventListener('click', () => calculate(false)); $('exportBtn').addEventListener('click', report);
+  $('resetBtn').addEventListener('click', () => { for (const id of inputs) $(id).value = defaults[id]; calculate(false); toast('Se restauraron los valores iniciales.'); });
+  for (const id of inputs) { $(id).addEventListener('input', () => calculate(true)); $(id).addEventListener('change', () => calculate(false)); }
+  calculate(true);
 })();
