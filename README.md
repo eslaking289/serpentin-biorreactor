@@ -12,13 +12,13 @@ Aplicación local para estimar la carga térmica de una fermentación aeróbica 
 
 ThermaBio puede instalarse como aplicación desde un navegador compatible. Después de abrirla por primera vez con conexión, sus archivos quedan guardados en el dispositivo para usarla sin conexión. No necesita cuentas, APIs ni servicios externos.
 
-## Instalar como aplicación
+## Instalar en un teléfono y usar sin datos
 
-1. Abre [ThermaBio](https://eslaking289.github.io/serpentin-biorreactor/) en Chrome o Edge.
-2. Pulsa **Instalar aplicación** si aparece el botón; también puedes usar **Instalar ThermaBio** desde el menú del navegador.
-3. Una vez instalada y abierta al menos una vez, ThermaBio puede iniciarse y calcular sin conexión.
+**Android:** abre [ThermaBio](https://eslaking289.github.io/serpentin-biorreactor/) en Chrome, toca **Instalar aplicación** o selecciona **Instalar aplicación** en el menú del navegador.
 
-La instalación inicial necesita internet para cargar la aplicación y guardar sus archivos. Luego los cálculos, la metodología y la exportación CSV funcionan localmente. También puedes abrir `index.html` directamente desde una carpeta descargada; el modo instalable sin conexión se activa al entrar por primera vez desde el sitio HTTPS.
+**iPhone:** abre el enlace en Safari, toca **Compartir** y luego **Añadir a pantalla de inicio**.
+
+La primera descarga e instalación sí necesita internet. Después abre ThermaBio una vez mientras tienes conexión para que el teléfono guarde sus archivos; a partir de ahí puedes activar modo avión y seguir calculando sin Wi-Fi ni datos móviles. Los cálculos y la exportación CSV se hacen en el teléfono. No necesita cuenta ni conexión a servidores externos.
 
 ## Alcance funcional
 

@@ -5,15 +5,22 @@
   }
   let installPrompt = null;
   const installButton = document.getElementById('installBtn');
+  const isInstalled = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+  if (installButton && isInstalled) installButton.hidden = true;
   window.addEventListener('beforeinstallprompt', event => {
     event.preventDefault(); installPrompt = event;
     if (installButton) installButton.hidden = false;
   });
   if (installButton) installButton.addEventListener('click', async () => {
-    if (!installPrompt) return;
-    installPrompt.prompt();
-    await installPrompt.userChoice;
-    installPrompt = null; installButton.hidden = true;
+    if (installPrompt) {
+      installPrompt.prompt();
+      await installPrompt.userChoice;
+      installPrompt = null; installButton.hidden = true;
+    } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent) || navigator.standalone !== undefined) {
+      toast('En Safari, toca Compartir y elige “Añadir a pantalla de inicio”.');
+    } else {
+      toast('Abre el menú del navegador y elige “Instalar aplicación” o “Añadir a pantalla principal”.');
+    }
   });
   window.addEventListener('appinstalled', () => { if (installButton) installButton.hidden = true; });
   const $ = id => document.getElementById(id);

@@ -1,7 +1,7 @@
-const CACHE_NAME = 'thermabio-v1';
+const CACHE_NAME = 'thermabio-v2';
 const APP_FILES = [
   './', './index.html', './metodologia.html', './styles.css', './core.js', './app.js',
-  './manifest.webmanifest', './icons/icon.svg'
+  './manifest.webmanifest', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png'
 ];
 
 self.addEventListener('install', event => {

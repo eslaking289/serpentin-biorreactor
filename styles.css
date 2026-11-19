@@ -79,5 +79,4 @@ body,main{background:#f3f5f3;color:#202923}
 .method-card,.method-note{background:#fafcfb;border-color:#dfe6e0}.method-card-title b{color:#29352c}.method-card-title small{color:#738077}.method-card-title .step-number{border-color:#d6e0d7;color:#4f7354}
 .equation{background:#f0f4f0;border-color:#dce4dd;color:#35583c}.method-card p,.method-note p,.method-note li{color:#657269}.method-note h3{color:#34483a}
 .method-warning{background:#f7f4eb;border-color:#e6dcc2}.method-warning b{color:#6e5b32}.method-warning p{color:#746b58}
-#installBtn[hidden]{display:none}
 @media(max-width:650px){.sidebar{background:#e8ede9;border-bottom-color:#d4ddd6}}
