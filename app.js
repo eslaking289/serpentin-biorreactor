@@ -1,5 +1,21 @@
 (() => {
   'use strict';
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js').catch(() => {}));
+  }
+  let installPrompt = null;
+  const installButton = document.getElementById('installBtn');
+  window.addEventListener('beforeinstallprompt', event => {
+    event.preventDefault(); installPrompt = event;
+    if (installButton) installButton.hidden = false;
+  });
+  if (installButton) installButton.addEventListener('click', async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    await installPrompt.userChoice;
+    installPrompt = null; installButton.hidden = true;
+  });
+  window.addEventListener('appinstalled', () => { if (installButton) installButton.hidden = true; });
   const $ = id => document.getElementById(id);
   const inputs = ['dh','substrateRate','agitation','heatFactor','tBroth','tIn','tOut','coolantFlow','cp','rho','mu','kf','hBroth','wallK','wallT','fouling','tubeD','tankD','clearance','pitch'];
   const defaults = Object.fromEntries(inputs.map(id => [id, $(id).value]));

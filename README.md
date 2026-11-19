@@ -10,27 +10,15 @@ Aplicación local para estimar la carga térmica de una fermentación aeróbica 
 2. Abre `index.html` directamente en tu navegador, o abre la carpeta en VS Code y usa una extensión de servidor local si quieres recarga automática.
 3. Introduce tus datos. Los resultados se recalculan en vivo y puedes descargar el informe como CSV.
 
-No es necesario instalar paquetes ni compilar el proyecto. La extensión de servidor local es opcional y solo sirve los archivos de esta carpeta.
+ThermaBio puede instalarse como aplicación desde un navegador compatible. Después de abrirla por primera vez con conexión, sus archivos quedan guardados en el dispositivo para usarla sin conexión. No necesita cuentas, APIs ni servicios externos.
 
-## Consola para Ubuntu 26.04 en WSL
+## Instalar como aplicación
 
-El repositorio incluye una interfaz exclusiva de consola para Ubuntu 26.04 en WSL. Funciona localmente, sin internet, APIs ni paquetes Python externos. Usa Python 3 y solo su biblioteca estándar.
+1. Abre [ThermaBio](https://eslaking289.github.io/serpentin-biorreactor/) en Chrome o Edge.
+2. Pulsa **Instalar aplicación** si aparece el botón; también puedes usar **Instalar ThermaBio** desde el menú del navegador.
+3. Una vez instalada y abierta al menos una vez, ThermaBio puede iniciarse y calcular sin conexión.
 
-Desde Ubuntu 26.04 en WSL, abre la raíz del repositorio y ejecuta:
-
-```bash
-./console/run-ubuntu.sh
-```
-
-El programa pregunta los valores y muestra los resultados en la terminal. Enter conserva cada valor sugerido. Para calcular con todos los valores predeterminados:
-
-```bash
-./console/run-ubuntu.sh --no-prompt
-```
-
-También puedes abrir el repositorio desde WSL en VS Code con `code .`. Ubuntu debe tener Python 3, que suele venir instalado; si falta, se puede instalar con `sudo apt install python3`. Tras tener Python disponible, el cálculo no requiere conexión.
-
-Se genera `console/resultado-thermabio.csv`. Puedes indicar otra ubicación con `--csv ruta/al/informe.csv`. El informe local está excluido de Git.
+La instalación inicial necesita internet para cargar la aplicación y guardar sus archivos. Luego los cálculos, la metodología y la exportación CSV funcionan localmente. También puedes abrir `index.html` directamente desde una carpeta descargada; el modo instalable sin conexión se activa al entrar por primera vez desde el sitio HTTPS.
 
 ## Alcance funcional
 
@@ -83,8 +71,9 @@ Las referencias respaldan correlaciones generales, no validan automáticamente c
 - `core.js`: motor de cálculo.
 - `app.js`: validación, interfaz y exportación CSV.
 - `MEMORIA.md`: alcance, decisiones, registro de apoyo con IA y pendientes de verificación del equipo.
-- `console/thermabio.py`: interfaz de terminal para Ubuntu 26.04 en WSL.
-- `console/run-ubuntu.sh`: lanzador Bash para esa versión.
+- `manifest.webmanifest`: configuración de instalación como aplicación.
+- `service-worker.js`: almacenamiento local de los archivos para su uso sin conexión.
+- `icons/icon.svg`: icono de la aplicación.
 
 ## Compatibilidad
 
