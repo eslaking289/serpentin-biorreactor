@@ -12,36 +12,25 @@ Aplicación local para estimar la carga térmica de una fermentación aeróbica 
 
 No es necesario instalar paquetes ni compilar el proyecto. La extensión de servidor local es opcional y solo sirve los archivos de esta carpeta.
 
-## Versiones de consola (Windows y Ubuntu/WSL)
+## Consola para Ubuntu 26.04 en WSL
 
-El repositorio incluye una interfaz de terminal que funciona localmente, sin internet, APIs, módulos ni paquetes externos. Ambas plataformas ejecutan el mismo script para mantener los mismos cálculos.
+El repositorio incluye una interfaz exclusiva de consola para Ubuntu 26.04 en WSL. Funciona localmente, sin internet, APIs ni paquetes Python externos. Usa Python 3 y solo su biblioteca estándar.
 
-### Windows PowerShell
-
-Requiere PowerShell 7 (`pwsh`). Abre PowerShell en la carpeta del repositorio y ejecuta:
-
-```powershell
-.\console\thermabio.ps1
-```
-
-Al presionar Enter en una pregunta se conserva el valor sugerido. Para usar todas las entradas predeterminadas sin preguntas:
-
-```powershell
-.\console\thermabio.ps1 -NoPrompt
-```
-
-### Ubuntu en WSL
-
-Instala PowerShell 7 una sola vez siguiendo la [guía oficial de Microsoft para Ubuntu](https://learn.microsoft.com/powershell/scripting/install/install-ubuntu). Después, desde la raíz del repositorio:
+Desde Ubuntu 26.04 en WSL, abre la raíz del repositorio y ejecuta:
 
 ```bash
-chmod +x console/run-ubuntu.sh
 ./console/run-ubuntu.sh
 ```
 
-También puedes abrir el mismo repositorio desde WSL en VS Code con `code .`. No hace falta instalar dependencias de la aplicación. La primera instalación de PowerShell sí requiere internet; luego el cálculo funciona sin conexión.
+El programa pregunta los valores y muestra los resultados en la terminal. Enter conserva cada valor sugerido. Para calcular con todos los valores predeterminados:
 
-En ambas plataformas se genera `console/resultado-thermabio.csv`. Puedes indicar otra ubicación con `-CsvPath ruta/al/informe.csv`. El informe local está excluido de Git.
+```bash
+./console/run-ubuntu.sh --no-prompt
+```
+
+También puedes abrir el repositorio desde WSL en VS Code con `code .`. Ubuntu debe tener Python 3, que suele venir instalado; si falta, se puede instalar con `sudo apt install python3`. Tras tener Python disponible, el cálculo no requiere conexión.
+
+Se genera `console/resultado-thermabio.csv`. Puedes indicar otra ubicación con `--csv ruta/al/informe.csv`. El informe local está excluido de Git.
 
 ## Alcance funcional
 
@@ -94,8 +83,8 @@ Las referencias respaldan correlaciones generales, no validan automáticamente c
 - `core.js`: motor de cálculo.
 - `app.js`: validación, interfaz y exportación CSV.
 - `MEMORIA.md`: alcance, decisiones, registro de apoyo con IA y pendientes de verificación del equipo.
-- `console/thermabio.ps1`: interfaz de terminal compatible con PowerShell 7 en Windows y Linux.
-- `console/run-ubuntu.sh`: lanzador de consola para Ubuntu y WSL.
+- `console/thermabio.py`: interfaz de terminal para Ubuntu 26.04 en WSL.
+- `console/run-ubuntu.sh`: lanzador Bash para esa versión.
 
 ## Compatibilidad
 

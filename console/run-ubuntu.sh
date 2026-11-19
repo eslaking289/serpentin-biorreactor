@@ -2,15 +2,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-
-if ! command -v pwsh >/dev/null 2>&1; then
-  cat >&2 <<'EOF'
-ThermaBio necesita PowerShell 7 (pwsh) en Ubuntu/WSL.
-Instálalo una vez con las instrucciones oficiales de Microsoft:
-https://learn.microsoft.com/powershell/scripting/install/install-ubuntu
-Después vuelve a ejecutar: ./console/run-ubuntu.sh
-EOF
+if ! command -v python3 >/dev/null 2>&1; then
+  echo 'ThermaBio necesita Python 3 en Ubuntu 26.04.' >&2
+  echo 'Instálalo con: sudo apt update && sudo apt install python3' >&2
   exit 127
 fi
-
-exec pwsh -NoLogo -NoProfile -File "$SCRIPT_DIR/thermabio.ps1" "$@"
+exec python3 "$SCRIPT_DIR/thermabio.py" "$@"
