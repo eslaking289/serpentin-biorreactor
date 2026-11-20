@@ -1,13 +1,21 @@
 package com.thermabio.app;
 
 import android.app.Activity;
+import android.content.res.AssetFileDescriptor;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Path;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
+import android.graphics.drawable.LayerDrawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
@@ -32,13 +40,13 @@ import java.util.Map;
 
 public class MainActivity extends Activity {
     private static final int CREATE_CSV = 41;
-    private static final int INK = Color.rgb(8, 8, 8);
-    private static final int MUTED = Color.rgb(55, 53, 45);
+    private static final int INK = Color.BLACK;
+    private static final int MUTED = Color.rgb(60, 73, 74);
     private static final int TEAL = Color.rgb(0, 194, 200);
     private static final int MAGENTA = Color.rgb(255, 0, 255);
     private static final int YELLOW = Color.rgb(255, 215, 0);
     private static final int PAPER = Color.rgb(245, 243, 220);
-    private static final int BG = Color.rgb(232, 230, 218);
+    private static final int BG = Color.rgb(252, 250, 227);
     private static final int LINE = Color.BLACK;
 
     private static final class Spec {
@@ -57,12 +65,20 @@ public class MainActivity extends Activity {
     private SharedPreferences preferences;
     private LinearLayout resultRows;
     private LinearLayout summaryGrid;
+    private LinearLayout calculatorSummaryGrid;
+    private TextView flowWarningText;
+    private final Button[] navigationButtons = new Button[3];
+    private final int[] navigationAccents = {TEAL, YELLOW, MAGENTA};
     private TextView statusText;
     private ScrollView scrollView;
-    private View resultsCard;
-    private View calculatorCard;
-    private View methodologyCard;
     private FrameLayout root;
+    private LinearLayout calculatorScreen;
+    private LinearLayout resultsScreen;
+    private LinearLayout methodologyScreen;
+    private int currentScreen = 0;
+    private Typeface headlineTypeface;
+    private Typeface bodyTypeface;
+    private Typeface monoTypeface;
     private boolean initializing = true;
 
     @Override protected void onCreate(Bundle state) {
@@ -70,6 +86,9 @@ public class MainActivity extends Activity {
         getWindow().setStatusBarColor(PAPER);
         getWindow().setNavigationBarColor(PAPER);
         getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        headlineTypeface = loadFont("fonts/SpaceGrotesk.ttf", 800, Typeface.create("sans-serif-black", Typeface.NORMAL));
+        bodyTypeface = loadFont("fonts/Chivo.ttf", 400, Typeface.create("sans-serif", Typeface.NORMAL));
+        monoTypeface = loadFont("fonts/JetBrainsMono.ttf", 600, Typeface.create("monospace", Typeface.NORMAL));
         preferences = getSharedPreferences("thermabio-local", MODE_PRIVATE);
         defineInputs();
         buildInterface();
@@ -111,11 +130,18 @@ public class MainActivity extends Activity {
         scrollView = new ScrollView(this);
         scrollView.setFillViewport(true);
         scrollView.setBackgroundColor(BG);
-        LinearLayout page = new LinearLayout(this);
-        page.setOrientation(LinearLayout.VERTICAL);
-        page.setPadding(dp(16), dp(12), dp(16), dp(34));
-        scrollView.addView(page);
-        calculatorCard = page;
+        LinearLayout screenStack = new LinearLayout(this);
+        screenStack.setOrientation(LinearLayout.VERTICAL);
+        scrollView.addView(screenStack);
+        calculatorScreen = newScreen();
+        resultsScreen = newScreen();
+        methodologyScreen = newScreen();
+        screenStack.addView(calculatorScreen);
+        screenStack.addView(resultsScreen);
+        screenStack.addView(methodologyScreen);
+        resultsScreen.setVisibility(View.GONE);
+        methodologyScreen.setVisibility(View.GONE);
+        LinearLayout page = calculatorScreen;
 
         LinearLayout brand = new LinearLayout(this);
         brand.setGravity(Gravity.CENTER_VERTICAL);
@@ -140,8 +166,11 @@ public class MainActivity extends Activity {
         intro.setLineSpacing(dp(3), 1f);
         page.addView(intro, margins(0, 0, 0, 18));
 
+        calculatorSummaryGrid = new LinearLayout(this);
+        calculatorSummaryGrid.setOrientation(LinearLayout.VERTICAL);
+        page.addView(calculatorSummaryGrid, margins(0, 0, 0, 9));
+
         LinearLayout formCard = card();
-        calculatorCard = formCard;
         page.addView(formCard, margins(0, 0, 0, 16));
         String currentGroup = "";
         for (Spec spec : specs) {
@@ -159,27 +188,33 @@ public class MainActivity extends Activity {
         }
 
         Button calculate = new Button(this);
-        calculate.setText("Calcular diseño");
+        calculate.setText("⚡  CALCULAR DIMENSIONAMIENTO");
         calculate.setTextColor(INK);
         calculate.setTextSize(16);
         calculate.setAllCaps(false);
-        calculate.setTypeface(Typeface.create("sans-serif-black", Typeface.NORMAL));
-        calculate.setBackground(rounded(TEAL, 3, INK));
+        calculate.setTypeface(headlineTypeface);
+        calculate.setBackground(projected(MAGENTA));
         calculate.setPadding(dp(16), dp(10), dp(16), dp(10));
         calculate.setOnClickListener(v -> {
             ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(calculate.getWindowToken(), 0);
             calculate(true);
-            scrollView.post(() -> scrollView.smoothScrollTo(0, resultsCard.getTop()));
+            showScreen(1);
         });
         page.addView(calculate, margins(0, 0, 0, 16));
 
+        addScreenHeader(resultsScreen, "RESULTADOS TÉRMICOS Y MECÁNICOS", "SIMULACIÓN LOCAL  ·  100% OFFLINE");
         LinearLayout output = card();
-        resultsCard = output;
-        page.addView(output, margins(0, 0, 0, 12));
+        resultsScreen.addView(output, margins(0, 0, 0, 12));
         TextView resultsTitle = text("RESULTADOS DEL DISEÑO", 20, INK, true);
         output.addView(resultsTitle, margins(0, 0, 0, 4));
         statusText = text("Completa los parámetros para calcular.", 13, MUTED, false);
         output.addView(statusText, margins(0, 0, 0, 14));
+        flowWarningText = text("", 12, INK, true);
+        flowWarningText.setPadding(dp(10), dp(9), dp(10), dp(9));
+        flowWarningText.setBackground(rounded(YELLOW, 0, INK));
+        flowWarningText.setVisibility(View.GONE);
+        output.addView(flowWarningText, margins(0, 0, 0, 12));
+        output.addView(coilSchematic(), margins(0, 0, 0, 12));
         summaryGrid = new LinearLayout(this);
         summaryGrid.setOrientation(LinearLayout.VERTICAL);
         output.addView(summaryGrid);
@@ -199,23 +234,30 @@ public class MainActivity extends Activity {
             startActivityForResult(intent, CREATE_CSV);
         });
         output.addView(export, margins(0, 18, 0, 0));
+        Button editAgain = smallButton("Editar parámetros");
+        editAgain.setOnClickListener(v -> showScreen(0));
+        output.addView(editAgain, margins(0, 10, 0, 0));
 
+        addScreenHeader(methodologyScreen, "METODOLOGÍA Y ECUACIONES", "BASES Y CRITERIOS DE DIMENSIONAMIENTO");
         LinearLayout method = card();
-        methodologyCard = method;
-        page.addView(method, margins(0, 0, 0, 14));
+        methodologyScreen.addView(method, margins(0, 0, 0, 14));
         TextView methodTitle = text("METODOLOGÍA", 20, INK, true);
         method.addView(methodTitle, margins(0, 0, 0, 5));
-        method.addView(text("BASE DE CÁLCULO · MODELO LOCAL", 10, MUTED, true), margins(0, 0, 0, 12));
-        addMethodBlock(method, "01 / CARGA TÉRMICA", "Q = |ΔHᵣ| · nᵣ · f_calor / 3600 + P_agitación", TEAL);
-        addMethodBlock(method, "02 / REFRIGERANTE", "ṁ = 1000 Q / [Cp (T_s − T_e)]    ·    ΔTlm = (ΔT₁ − ΔT₂) / ln(ΔT₁/ΔT₂)", YELLOW);
-        addMethodBlock(method, "03 / TRANSFERENCIA", "Re = 4ṁ/(π Di μ)    ·    Pr = μ Cp/k    ·    A = 1000 Q/(U ΔTlm)    ·    L = A/(π Do)", MAGENTA);
-        TextView assumptions = text("Supone caldo bien mezclado, propiedades constantes y coeficiente externo hₒ ingresado. Gnielinski, la corrección helicoidal y la caída de presión de tubo recto son aproximaciones. Verifica unidades, propiedades y diseño mecánico antes de fabricar u operar.", 12, MUTED, false);
+        method.addView(text("FUNDAMENTO TÉRMICO · CÁLCULO LOCAL", 10, MUTED, true), margins(0, 0, 0, 12));
+        addMethodBlock(method, "01 / BALANCE DE CALOR", "Q_rxn = |ΔHᵣ| · OUR · f_calor / 3600\nQ_total = Q_rxn + P_agitación", TEAL);
+        addMethodBlock(method, "02 / CAPACIDAD Y FUERZA IMPULSORA", "ṁ_req = 1000 Q_total / [Cp (T_s − T_e)]\nΔTlm = (ΔT₁ − ΔT₂) / ln(ΔT₁ / ΔT₂)", YELLOW);
+        addMethodBlock(method, "03 / FLUJO INTERNO", "Re = 4ṁ / (π Di μ)    ·    Pr = μ Cp / k_f\nNu: 3.66 (laminar) · interpolación · Gnielinski", TEAL);
+        addMethodBlock(method, "04 / RESISTENCIAS TÉRMICAS", "1/Uₒ = 1/hₒ + Rf + Do ln(Do/Di)/(2 k_p) + Do/(Di hᵢ)\nA = 1000 Q_total / (Uₒ ΔTlm)    ·    L = A / (π Do)", MAGENTA);
+        addMethodBlock(method, "05 / GEOMETRÍA Y PRESIÓN", "D_hélice = D_tanque − 2 holgura − Do\nL_vuelta = √[(π D_hélice)² + paso²]    ·    ΔP ≈ f_D (L/Di) ρv²/2", YELLOW);
+        TextView assumptions = text("SUPUESTOS Y LÍMITES\nCaldo bien mezclado y a temperatura uniforme; propiedades constantes; hₒ ingresado; correlaciones y pérdidas en hélice aproximadas. Gnielinski es orientativa en 3,000 ≤ Re ≤ 5×10⁶ y 0.5 ≤ Pr ≤ 2,000. La caída de presión equivale a tubo recto y omite accesorios y pérdidas locales. Verifica unidades, propiedades y diseño mecánico antes de fabricar u operar.", 12, MUTED, false);
         assumptions.setLineSpacing(dp(3), 1f);
-        method.addView(assumptions, margins(0, 5, 0, 2));
+        assumptions.setPadding(dp(10), dp(10), dp(10), dp(10));
+        assumptions.setBackground(rounded(Color.WHITE, 0, INK));
+        method.addView(assumptions, margins(0, 4, 0, 8));
 
         TextView disclaimer = text("ESTIMACIÓN ACADÉMICA PRELIMINAR. VERIFICA PROPIEDADES Y CORRELACIONES ANTES DE FABRICAR U OPERAR UN EQUIPO.", 11, MUTED, true);
         disclaimer.setLineSpacing(dp(3), 1f);
-        page.addView(disclaimer, margins(2, 0, 2, 0));
+        methodologyScreen.addView(disclaimer, margins(2, 0, 2, 12));
         FrameLayout.LayoutParams scrollParams = new FrameLayout.LayoutParams(-1, -1);
         scrollParams.bottomMargin = dp(68);
         root.addView(scrollView, scrollParams);
@@ -224,7 +266,7 @@ public class MainActivity extends Activity {
         navigation.setOrientation(LinearLayout.HORIZONTAL);
         navigation.setGravity(Gravity.CENTER);
         navigation.setPadding(dp(10), dp(7), dp(10), dp(7));
-        navigation.setBackground(rounded(INK, 0, INK));
+        navigation.setBackground(projected(PAPER));
         addNavigationItem(navigation, "01  CALCULAR", TEAL, 0);
         addNavigationItem(navigation, "02  RESULTADOS", YELLOW, 1);
         addNavigationItem(navigation, "03  MÉTODO", MAGENTA, 2);
@@ -237,10 +279,13 @@ public class MainActivity extends Activity {
         LinearLayout block = new LinearLayout(this);
         block.setOrientation(LinearLayout.VERTICAL);
         block.setPadding(dp(10), dp(8), dp(10), dp(8));
-        block.setBackground(rounded(accent, 0, INK));
-        block.addView(text(title, 11, INK, true));
+        block.setBackground(projected(PAPER));
+        TextView heading = text(title, 11, INK, true);
+        heading.setBackground(rounded(accent, 0, INK));
+        heading.setPadding(dp(8), dp(6), dp(8), dp(6));
+        block.addView(heading);
         TextView formula = text(equation, 12, INK, true);
-        formula.setTypeface(Typeface.create("monospace", Typeface.BOLD));
+        formula.setTypeface(monoTypeface);
         formula.setLineSpacing(dp(3), 1f);
         block.addView(formula, margins(0, 5, 0, 0));
         parent.addView(block, margins(0, 0, 0, 8));
@@ -253,16 +298,104 @@ public class MainActivity extends Activity {
         button.setTextColor(INK);
         button.setAllCaps(false);
         button.setMinHeight(dp(48));
-        button.setTypeface(Typeface.create("sans-serif-black", Typeface.NORMAL));
+        button.setTypeface(headlineTypeface);
         button.setPadding(dp(3), 0, dp(3), 0);
-        button.setBackground(rounded(accent, 0, INK));
-        button.setOnClickListener(v -> {
-            View target = destination == 0 ? calculatorCard : destination == 1 ? resultsCard : methodologyCard;
-            scrollView.smoothScrollTo(0, target.getTop());
-        });
+        button.setBackground(projected(destination == 0 ? accent : Color.WHITE));
+        navigationButtons[destination] = button;
+        button.setOnClickListener(v -> showScreen(destination));
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -1, 1f);
         params.setMargins(dp(3), 0, dp(3), 0);
         parent.addView(button, params);
+    }
+
+    private LinearLayout newScreen() {
+        LinearLayout screen = new LinearLayout(this);
+        screen.setOrientation(LinearLayout.VERTICAL);
+        screen.setPadding(dp(16), dp(12), dp(16), dp(34));
+        return screen;
+    }
+
+    private void addScreenHeader(LinearLayout screen, String title, String subtitle) {
+        LinearLayout brand = new LinearLayout(this);
+        brand.setGravity(Gravity.CENTER_VERTICAL);
+        TextView mark = text("TB", 17, INK, true);
+        mark.setGravity(Gravity.CENTER);
+        mark.setBackground(rounded(TEAL, 0, INK));
+        brand.addView(mark, new LinearLayout.LayoutParams(dp(44), dp(44)));
+        LinearLayout copy = new LinearLayout(this);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        copy.setPadding(dp(10), 0, 0, 0);
+        copy.addView(text("THERMABIO", 19, INK, true));
+        copy.addView(text("● OFFLINE  ·  CÁLCULO EN EL DISPOSITIVO", 9, INK, true));
+        brand.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
+        screen.addView(brand, margins(0, 4, 0, 18));
+        TextView heading = text(title, 25, INK, true);
+        heading.setLineSpacing(dp(1), 1f);
+        screen.addView(heading, margins(0, 0, 0, 5));
+        TextView caption = text(subtitle, 10, MUTED, true);
+        caption.setLetterSpacing(0.08f);
+        screen.addView(caption, margins(0, 0, 0, 14));
+    }
+
+    private void showScreen(int screenIndex) {
+        if (screenIndex < 0 || screenIndex > 2) return;
+        LinearLayout target = screenIndex == 0 ? calculatorScreen : screenIndex == 1 ? resultsScreen : methodologyScreen;
+        LinearLayout current = currentScreen == 0 ? calculatorScreen : currentScreen == 1 ? resultsScreen : methodologyScreen;
+        if (current == target) {
+            scrollView.smoothScrollTo(0, 0);
+            return;
+        }
+        current.animate().alpha(0f).setDuration(70).withEndAction(() -> {
+            current.setVisibility(View.GONE);
+            target.setAlpha(0f);
+            target.setVisibility(View.VISIBLE);
+            scrollView.scrollTo(0, 0);
+            target.animate().alpha(1f).setDuration(150).start();
+        }).start();
+        currentScreen = screenIndex;
+        for (int i = 0; i < navigationButtons.length; i++) {
+            if (navigationButtons[i] != null) {
+                navigationButtons[i].setBackground(projected(i == screenIndex ? navigationAccents[i] : Color.WHITE));
+            }
+        }
+    }
+
+    private View coilSchematic() {
+        FrameLayout diagram = new FrameLayout(this);
+        diagram.setBackground(rounded(Color.WHITE, 0, INK));
+        View drawing = new View(this) {
+            private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
+            @Override protected void onDraw(Canvas canvas) {
+                super.onDraw(canvas);
+                float w = getWidth(), h = getHeight();
+                line.setStyle(Paint.Style.STROKE);
+                line.setStrokeWidth(dp(2));
+                line.setColor(TEAL);
+                Path coil = new Path();
+                float left = dp(20), right = w - dp(20), center = h * 0.47f, amplitude = h * 0.23f;
+                coil.moveTo(left, center);
+                int steps = 180;
+                for (int i = 1; i <= steps; i++) {
+                    float x = left + (right - left) * i / steps;
+                    float y = center + (float) Math.sin(i * 4f * (float) Math.PI / steps) * amplitude;
+                    coil.lineTo(x, y);
+                }
+                canvas.drawPath(coil, line);
+                line.setColor(INK);
+                line.setStrokeWidth(dp(1));
+                canvas.drawLine(left, dp(12), left, h - dp(12), line);
+                canvas.drawLine(right, dp(12), right, h - dp(12), line);
+                canvas.drawLine(left, dp(12), right, dp(12), line);
+                canvas.drawLine(left, h - dp(12), right, h - dp(12), line);
+            }
+        };
+        diagram.addView(drawing, new FrameLayout.LayoutParams(-1, dp(118)));
+        TextView caption = text("ESQUEMA CONCEPTUAL DEL SERPENTÍN  ·  NO A ESCALA", 9, MUTED, true);
+        caption.setGravity(Gravity.CENTER);
+        caption.setPadding(dp(5), dp(4), dp(5), dp(4));
+        FrameLayout.LayoutParams captionParams = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
+        diagram.addView(caption, captionParams);
+        return diagram;
     }
 
     private String groupNote(String group) {
@@ -282,6 +415,7 @@ public class MainActivity extends Activity {
         EditText edit = new EditText(this);
         edit.setSingleLine(true);
         edit.setTextSize(16);
+        edit.setTypeface(monoTypeface);
         edit.setTextColor(INK);
         edit.setSelectAllOnFocus(true);
         edit.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL | android.text.InputType.TYPE_NUMBER_FLAG_SIGNED);
@@ -331,6 +465,8 @@ public class MainActivity extends Activity {
         statusText.setTextColor(MAGENTA);
             summaryGrid.removeAllViews();
             resultRows.removeAllViews();
+            if (calculatorSummaryGrid != null) calculatorSummaryGrid.removeAllViews();
+            if (flowWarningText != null) flowWarningText.setVisibility(View.GONE);
             if (notify) Toast.makeText(this, ex.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
@@ -415,25 +551,16 @@ public class MainActivity extends Activity {
         resultValues.clear(); resultValues.putAll(result);
         statusText.setText("Actualizado en vivo · cálculos realizados en este teléfono");
         statusText.setTextColor(INK);
-        summaryGrid.removeAllViews(); resultRows.removeAllViews();
-        String[][] keyRows = {{"Carga térmica total", "Área exterior requerida"}, {"Longitud de tubo", "Caudal másico requerido"}};
-        for (String[] keys : keyRows) {
-            LinearLayout row = new LinearLayout(this);
-            for (String key : keys) {
-                LinearLayout tile = new LinearLayout(this);
-                tile.setOrientation(LinearLayout.VERTICAL);
-                tile.setPadding(dp(12), dp(12), dp(10), dp(12));
-                int accent = (summaryGrid.getChildCount() + (keys[0].equals(key) ? 0 : 1)) % 2 == 0 ? TEAL : YELLOW;
-                tile.setBackground(rounded(accent, 3, INK));
-                TextView label = text(key, 11, MUTED, true);
-                TextView value = text(result.get(key), 17, INK, true);
-                tile.addView(label); tile.addView(value, margins(0, 6, 0, 0));
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1);
-                if (keys[0].equals(key)) lp.setMargins(0, 0, dp(8), dp(8)); else lp.setMargins(dp(4), 0, 0, dp(8));
-                row.addView(tile, lp);
-            }
-            summaryGrid.addView(row);
-        }
+        summaryGrid.removeAllViews(); resultRows.removeAllViews(); calculatorSummaryGrid.removeAllViews();
+        populateSummaryGrid(summaryGrid, result);
+        populateSummaryGrid(calculatorSummaryGrid, result);
+        boolean flowInsufficient = result.get("Estado del caudal").startsWith("Insuficiente");
+        flowWarningText.setText(flowInsufficient
+                ? "ALERTA DE INGENIERÍA · EL CAUDAL DISPONIBLE NO CUBRE EL DEBER TÉRMICO. Aumenta el flujo disponible o revisa las temperaturas objetivo."
+                : "CAUDAL DISPONIBLE SUFICIENTE PARA EL DEBER TÉRMICO CALCULADO.");
+        flowWarningText.setBackground(rounded(flowInsufficient ? YELLOW : TEAL, 0, INK));
+        flowWarningText.setVisibility(View.VISIBLE);
+        resultRows.removeAllViews();
         for (Map.Entry<String, String> entry : result.entrySet()) {
             LinearLayout line = new LinearLayout(this);
             line.setGravity(Gravity.CENTER_VERTICAL);
@@ -447,6 +574,33 @@ public class MainActivity extends Activity {
             View divider = new View(this); divider.setBackgroundColor(LINE);
             resultRows.addView(divider, new LinearLayout.LayoutParams(-1, dp(2)));
             View space = new View(this); resultRows.addView(space, new LinearLayout.LayoutParams(-1, dp(7)));
+        }
+    }
+
+    private void populateSummaryGrid(LinearLayout parent, Map<String, String> result) {
+        String[][] keyRows = {{"Carga térmica total", "Área exterior requerida"}, {"Longitud de tubo", "Caudal másico requerido"}};
+        String[] shortLabels = {"CARGA TÉRMICA (Q)", "ÁREA ESTIMADA (A)", "LONGITUD DE TUBO (L)", "CAUDAL REQUERIDO (ṁ)"};
+        int tileIndex = 0;
+        for (String[] keys : keyRows) {
+            LinearLayout row = new LinearLayout(this);
+            for (String key : keys) {
+                LinearLayout tile = new LinearLayout(this);
+                tile.setOrientation(LinearLayout.VERTICAL);
+                tile.setPadding(dp(12), dp(12), dp(10), dp(12));
+                int accent = navigationAccents[tileIndex % navigationAccents.length];
+                tile.setBackground(projected(Color.WHITE));
+                TextView label = text(shortLabels[tileIndex], 10, INK, true);
+                label.setBackground(rounded(accent, 0, INK));
+                label.setPadding(dp(6), dp(4), dp(6), dp(4));
+                TextView value = text(result.get(key), 17, INK, true);
+                value.setTypeface(monoTypeface);
+                tile.addView(label); tile.addView(value, margins(0, 6, 0, 0));
+                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1);
+                if (keys[0].equals(key)) lp.setMargins(0, 0, dp(8), dp(8)); else lp.setMargins(dp(4), 0, 0, dp(8));
+                row.addView(tile, lp);
+                tileIndex++;
+            }
+            parent.addView(row);
         }
     }
 
@@ -479,19 +633,27 @@ public class MainActivity extends Activity {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(dp(14), dp(14), dp(14), dp(14));
-        layout.setBackground(rounded(PAPER, 3, INK));
+        layout.setBackground(projected(PAPER));
         return layout;
     }
     private TextView text(String value, float size, int color, boolean bold) {
         TextView view = new TextView(this);
         view.setText(value); view.setTextSize(size); view.setTextColor(color);
-        if (bold) view.setTypeface(Typeface.create("sans-serif-black", Typeface.NORMAL));
+        view.setTypeface(bold ? headlineTypeface : bodyTypeface);
         return view;
+    }
+    private Typeface loadFont(String assetPath, int weight, Typeface fallback) {
+        if (Build.VERSION.SDK_INT < 26) return fallback;
+        try (AssetFileDescriptor descriptor = getAssets().openFd(assetPath)) {
+            return new Typeface.Builder(descriptor.getFileDescriptor()).setWeight(weight).build();
+        } catch (Exception ignored) {
+            return fallback;
+        }
     }
     private Button smallButton(String title) {
         Button button = new Button(this);
         button.setText(title); button.setTextSize(13); button.setTextColor(INK); button.setAllCaps(false);
-        button.setTypeface(Typeface.create("sans-serif-black", Typeface.NORMAL));
+        button.setTypeface(headlineTypeface);
         button.setBackground(rounded(title.toLowerCase(Locale.ROOT).contains("restablecer") ? YELLOW : MAGENTA, 3, INK));
         return button;
     }
@@ -499,6 +661,13 @@ public class MainActivity extends Activity {
         GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(0);
         if (stroke != null) d.setStroke(dp(3), stroke);
         return d;
+    }
+    private Drawable projected(int color) {
+        LayerDrawable projection = new LayerDrawable(new Drawable[]{
+                new ColorDrawable(INK), rounded(color, 0, INK)
+        });
+        projection.setLayerInset(0, dp(4), dp(4), dp(-4), dp(-4));
+        return projection;
     }
     private LinearLayout.LayoutParams margins(int left, int top, int right, int bottom) {
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(-1, -2);
