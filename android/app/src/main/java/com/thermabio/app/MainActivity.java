@@ -12,6 +12,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.FrameLayout;
 import android.view.inputmethod.InputMethodManager;
 import android.content.Context;
 import android.widget.Button;
@@ -34,7 +35,7 @@ public class MainActivity extends Activity {
     private static final int INK = Color.rgb(8, 8, 8);
     private static final int MUTED = Color.rgb(55, 53, 45);
     private static final int TEAL = Color.rgb(0, 194, 200);
-    private static final int MAGENTA = Color.rgb(245, 0, 190);
+    private static final int MAGENTA = Color.rgb(255, 0, 255);
     private static final int YELLOW = Color.rgb(255, 215, 0);
     private static final int PAPER = Color.rgb(245, 243, 220);
     private static final int BG = Color.rgb(232, 230, 218);
@@ -59,6 +60,9 @@ public class MainActivity extends Activity {
     private TextView statusText;
     private ScrollView scrollView;
     private View resultsCard;
+    private View calculatorCard;
+    private View methodologyCard;
+    private FrameLayout root;
     private boolean initializing = true;
 
     @Override protected void onCreate(Bundle state) {
@@ -101,6 +105,9 @@ public class MainActivity extends Activity {
     }
 
     private void buildInterface() {
+        root = new FrameLayout(this);
+        root.setBackgroundColor(BG);
+        root.setFitsSystemWindows(true);
         scrollView = new ScrollView(this);
         scrollView.setFillViewport(true);
         scrollView.setBackgroundColor(BG);
@@ -108,6 +115,7 @@ public class MainActivity extends Activity {
         page.setOrientation(LinearLayout.VERTICAL);
         page.setPadding(dp(16), dp(12), dp(16), dp(34));
         scrollView.addView(page);
+        calculatorCard = page;
 
         LinearLayout brand = new LinearLayout(this);
         brand.setGravity(Gravity.CENTER_VERTICAL);
@@ -133,6 +141,7 @@ public class MainActivity extends Activity {
         page.addView(intro, margins(0, 0, 0, 18));
 
         LinearLayout formCard = card();
+        calculatorCard = formCard;
         page.addView(formCard, margins(0, 0, 0, 16));
         String currentGroup = "";
         for (Spec spec : specs) {
@@ -191,10 +200,69 @@ public class MainActivity extends Activity {
         });
         output.addView(export, margins(0, 18, 0, 0));
 
+        LinearLayout method = card();
+        methodologyCard = method;
+        page.addView(method, margins(0, 0, 0, 14));
+        TextView methodTitle = text("METODOLOGÍA", 20, INK, true);
+        method.addView(methodTitle, margins(0, 0, 0, 5));
+        method.addView(text("BASE DE CÁLCULO · MODELO LOCAL", 10, MUTED, true), margins(0, 0, 0, 12));
+        addMethodBlock(method, "01 / CARGA TÉRMICA", "Q = |ΔHᵣ| · nᵣ · f_calor / 3600 + P_agitación", TEAL);
+        addMethodBlock(method, "02 / REFRIGERANTE", "ṁ = 1000 Q / [Cp (T_s − T_e)]    ·    ΔTlm = (ΔT₁ − ΔT₂) / ln(ΔT₁/ΔT₂)", YELLOW);
+        addMethodBlock(method, "03 / TRANSFERENCIA", "Re = 4ṁ/(π Di μ)    ·    Pr = μ Cp/k    ·    A = 1000 Q/(U ΔTlm)    ·    L = A/(π Do)", MAGENTA);
+        TextView assumptions = text("Supone caldo bien mezclado, propiedades constantes y coeficiente externo hₒ ingresado. Gnielinski, la corrección helicoidal y la caída de presión de tubo recto son aproximaciones. Verifica unidades, propiedades y diseño mecánico antes de fabricar u operar.", 12, MUTED, false);
+        assumptions.setLineSpacing(dp(3), 1f);
+        method.addView(assumptions, margins(0, 5, 0, 2));
+
         TextView disclaimer = text("ESTIMACIÓN ACADÉMICA PRELIMINAR. VERIFICA PROPIEDADES Y CORRELACIONES ANTES DE FABRICAR U OPERAR UN EQUIPO.", 11, MUTED, true);
         disclaimer.setLineSpacing(dp(3), 1f);
         page.addView(disclaimer, margins(2, 0, 2, 0));
-        setContentView(scrollView);
+        FrameLayout.LayoutParams scrollParams = new FrameLayout.LayoutParams(-1, -1);
+        scrollParams.bottomMargin = dp(68);
+        root.addView(scrollView, scrollParams);
+
+        LinearLayout navigation = new LinearLayout(this);
+        navigation.setOrientation(LinearLayout.HORIZONTAL);
+        navigation.setGravity(Gravity.CENTER);
+        navigation.setPadding(dp(10), dp(7), dp(10), dp(7));
+        navigation.setBackground(rounded(INK, 0, INK));
+        addNavigationItem(navigation, "01  CALCULAR", TEAL, 0);
+        addNavigationItem(navigation, "02  RESULTADOS", YELLOW, 1);
+        addNavigationItem(navigation, "03  MÉTODO", MAGENTA, 2);
+        FrameLayout.LayoutParams navParams = new FrameLayout.LayoutParams(-1, dp(64), Gravity.BOTTOM);
+        root.addView(navigation, navParams);
+        setContentView(root);
+    }
+
+    private void addMethodBlock(LinearLayout parent, String title, String equation, int accent) {
+        LinearLayout block = new LinearLayout(this);
+        block.setOrientation(LinearLayout.VERTICAL);
+        block.setPadding(dp(10), dp(8), dp(10), dp(8));
+        block.setBackground(rounded(accent, 0, INK));
+        block.addView(text(title, 11, INK, true));
+        TextView formula = text(equation, 12, INK, true);
+        formula.setTypeface(Typeface.create("monospace", Typeface.BOLD));
+        formula.setLineSpacing(dp(3), 1f);
+        block.addView(formula, margins(0, 5, 0, 0));
+        parent.addView(block, margins(0, 0, 0, 8));
+    }
+
+    private void addNavigationItem(LinearLayout parent, String title, int accent, int destination) {
+        Button button = new Button(this);
+        button.setText(title);
+        button.setTextSize(10);
+        button.setTextColor(INK);
+        button.setAllCaps(false);
+        button.setMinHeight(dp(48));
+        button.setTypeface(Typeface.create("sans-serif-black", Typeface.NORMAL));
+        button.setPadding(dp(3), 0, dp(3), 0);
+        button.setBackground(rounded(accent, 0, INK));
+        button.setOnClickListener(v -> {
+            View target = destination == 0 ? calculatorCard : destination == 1 ? resultsCard : methodologyCard;
+            scrollView.smoothScrollTo(0, target.getTop());
+        });
+        LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -1, 1f);
+        params.setMargins(dp(3), 0, dp(3), 0);
+        parent.addView(button, params);
     }
 
     private String groupNote(String group) {
@@ -428,8 +496,8 @@ public class MainActivity extends Activity {
         return button;
     }
     private GradientDrawable rounded(int color, int radius, Integer stroke) {
-        GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(dp(radius));
-        if (stroke != null) d.setStroke(dp(2), stroke);
+        GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(0);
+        if (stroke != null) d.setStroke(dp(3), stroke);
         return d;
     }
     private LinearLayout.LayoutParams margins(int left, int top, int right, int bottom) {
