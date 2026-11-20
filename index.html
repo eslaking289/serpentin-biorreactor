@@ -48,7 +48,7 @@
         <a class="nav-link" href="#resultados"><span>⌁</span> Resultados térmicos</a>
         <a class="nav-link" href="#metodologia-completa"><span>∑</span> Metodología completa</a>
       </nav>
-      <div class="sidebar-bottom"><div class="offline-card"><span class="offline-icon">◉</span><div><b>Modo local</b><small>Sin conexión ni APIs</small></div><span class="live-dot"></span></div><p>FENÓMENOS DE TRANSPORTE<br>Cuatrimestre sep–dic 2026</p></div>
+      <div class="sidebar-bottom"><div class="offline-card"><span class="offline-icon">◉</span><div><b>Cálculo local</b><small>Sin servicios externos</small></div><span class="live-dot"></span></div><p>FENÓMENOS DE TRANSPORTE<br>Cuatrimestre sep–dic 2026</p></div>
     </aside>
 
     <main id="inicio">
@@ -118,24 +118,24 @@
           <article class="method-card"><div class="method-card-title"><span class="step-number">02</span><div><b>Fuerza impulsora</b><small>Caldo isotermo y refrigerante variable</small></div></div>
             <div class="equation">ΔT<sub>caliente</sub> = T<sub>caldo</sub> − T<sub>salida</sub></div>
             <div class="equation">ΔT<sub>fría</sub> = T<sub>caldo</sub> − T<sub>entrada</sub></div>
-            <div class="equation">ΔT<sub>lm</sub> = (ΔT<sub>fría</sub> − ΔT<sub>caliente</sub>) / ln(ΔT<sub>fría</sub>/ΔT<sub>caliente</sub>)</div>
+            <div class="equation equation-long">ΔT<sub>lm</sub> = <span class="fraction"><span>ΔT<sub>fría</sub> − ΔT<sub>caliente</sub></span><span>ln(ΔT<sub>fría</sub> / ΔT<sub>caliente</sub>)</span></span></div>
             <p>La forma límite cuando las dos diferencias son iguales es su media aritmética. Se exige T<sub>caldo</sub> mayor que ambas temperaturas del refrigerante y T<sub>salida</sub> mayor que T<sub>entrada</sub>.</p>
           </article>
           <article class="method-card"><div class="method-card-title"><span class="step-number">03</span><div><b>Caudal requerido y convección interior</b><small>Refrigerante dentro del tubo</small></div></div>
-            <div class="equation">ṁ<sub>req</sub> = 1000 · Q<sub>diseño</sub> / [C<sub>p</sub> · (T<sub>salida</sub> − T<sub>entrada</sub>)]</div>
-            <div class="equation">v = 4ṁ/(ρπD<sub>i</sub>²) &nbsp; Re = 4ṁ/(πD<sub>i</sub>μ) &nbsp; Pr = μC<sub>p</sub>/k<sub>f</sub></div>
+            <div class="equation equation-long">ṁ<sub>req</sub> = <span class="fraction"><span>1000 · Q<sub>diseño</sub></span><span>C<sub>p</sub> · (T<sub>salida</sub> − T<sub>entrada</sub>)</span></span></div>
+            <div class="equation equation-long">v = <span class="fraction"><span>4ṁ</span><span>ρπD<sub>i</sub>²</span></span><span class="formula-separator">Re =</span><span class="fraction"><span>4ṁ</span><span>πD<sub>i</sub>μ</span></span><span class="formula-separator">Pr =</span><span class="fraction"><span>μC<sub>p</sub></span><span>k<sub>f</sub></span></span></div>
             <div class="equation">Nu = 3.66 (Re &lt; 2300); interpolación 2300–3000; Gnielinski (Re ≥ 3000)</div>
-            <div class="equation">h<sub>i</sub> = Nu·k<sub>f</sub>/D<sub>i</sub> · [1 + 3.5D<sub>i</sub>/D<sub>hélice</sub>] (Re ≥ 2300)</div>
+            <div class="equation equation-long">h<sub>i</sub> = <span class="fraction"><span>Nu · k<sub>f</sub></span><span>D<sub>i</sub></span></span> · [1 + <span class="fraction"><span>3.5D<sub>i</sub></span><span>D<sub>hélice</sub></span></span>] (Re ≥ 2300)</div>
             <p>Q se expresa en kW y C<sub>p</sub> en J/(kg·K), por eso se incluye el factor 1000. La correlación de Gnielinski se considera orientativa para 3000 ≤ Re ≤ 5×10⁶ y 0.5 ≤ Pr ≤ 2000; la transición y la corrección helicoidal también son aproximaciones.</p>
           </article>
           <article class="method-card"><div class="method-card-title"><span class="step-number">04</span><div><b>Resistencias térmicas</b><small>Coeficiente global referido al exterior</small></div></div>
-            <div class="equation equation-tall">1/U<sub>o</sub> = 1/h<sub>o</sub> + R<sub>f</sub> + D<sub>o</sub> ln(D<sub>o</sub>/D<sub>i</sub>)/(2k<sub>pared</sub>) + D<sub>o</sub>/(D<sub>i</sub>h<sub>i</sub>)</div>
+            <div class="equation equation-tall equation-long">1/U<sub>o</sub> = <span class="fraction"><span>1</span><span>h<sub>o</sub></span></span> + R<sub>f</sub> + <span class="fraction"><span>D<sub>o</sub> ln(D<sub>o</sub> / D<sub>i</sub>)</span><span>2k<sub>pared</sub></span></span> + <span class="fraction"><span>D<sub>o</sub></span><span>D<sub>i</sub>h<sub>i</sub></span></span></div>
             <div class="equation">D<sub>i</sub> = D<sub>o</sub> − 2t<sub>pared</sub></div>
             <p>El refrigerante circula por dentro del tubo (h<sub>i</sub>, calculado con Gnielinski y corrección 1 + 3.5 D<sub>i</sub>/D<sub>hélice</sub>) y el caldo baña el exterior (h<sub>o</sub>, ingresado) en W/(m²·K); k en W/(m·K); dimensiones en m y R<sub>f</sub> en m²·K/W.</p>
           </article>
           <article class="method-card"><div class="method-card-title"><span class="step-number">05</span><div><b>Área y longitud</b><small>Dimensionamiento térmico ideal</small></div></div>
-            <div class="equation">A<sub>o</sub> = (1000 · Q<sub>diseño</sub>) / (U<sub>o</sub> · ΔT<sub>lm</sub>)</div>
-            <div class="equation">L = A<sub>o</sub> / (π · D<sub>o</sub>)</div>
+            <div class="equation equation-long">A<sub>o</sub> = <span class="fraction"><span>1000 · Q<sub>diseño</sub></span><span>U<sub>o</sub> · ΔT<sub>lm</sub></span></span></div>
+            <div class="equation">L = <span class="fraction"><span>A<sub>o</sub></span><span>π · D<sub>o</sub></span></span></div>
             <p>Q<sub>diseño</sub> está en kW y se multiplica por 1000 para expresarlo en W. El área obtenida es exterior; por eso la longitud se calcula con el perímetro exterior del tubo.</p>
           </article>
           <article class="method-card"><div class="method-card-title"><span class="step-number">06</span><div><b>Geometría helicoidal</b><small>Vueltas y altura ocupada aproximadas</small></div></div>
@@ -145,9 +145,9 @@
             <p>El paso p se convierte de mm a m. La hélice se considera ideal, circular y de paso constante; el resultado no comprueba holguras, boquillas, soportes ni restricciones del recipiente.</p>
           </article>
           <article class="method-card"><div class="method-card-title"><span class="step-number">07</span><div><b>Presión y disponibilidad de caudal</b><small>Comprobaciones simplificadas</small></div></div>
-            <div class="equation">ΔP ≈ f<sub>D</sub>(L/D<sub>i</sub>)ρv²/2; f<sub>D</sub>=64/Re (laminar)</div>
-            <div class="equation">f<sub>D</sub>≈[0.79 ln(Re)−1.64]⁻² (turbulento)</div>
-            <div class="equation">r<sub>caudal</sub> = ṁ<sub>disponible</sub>/ṁ<sub>requerido</sub> &nbsp; ; &nbsp; r ≥ 1: suficiente</div>
+            <div class="equation equation-long">ΔP ≈ f<sub>D</sub> · <span class="fraction"><span>L</span><span>D<sub>i</sub></span></span> · <span class="fraction"><span>ρv²</span><span>2</span></span></div>
+            <div class="equation">f<sub>D</sub> = 64 / Re (laminar); &nbsp; f<sub>D</sub> ≈ [0.79 ln(Re) − 1.64]<sup>−2</sup> (turbulento)</div>
+            <div class="equation">r<sub>caudal</sub> = ṁ<sub>disponible</sub> / ṁ<sub>requerido</sub>; &nbsp; r ≥ 1: suficiente</div>
             <p>La caída de presión usa una aproximación de tubo recto equivalente y no incluye la curvatura de la hélice, accesorios ni pérdidas locales. Las propiedades de refrigerante se pueden editar; los valores por defecto representan agua aproximadamente a 14 °C.</p>
           </article>
         </div>
@@ -157,7 +157,7 @@
         </div>
         <div class="method-warning"><b>Uso responsable</b><p>Este resultado es una estimación académica preliminar y no una especificación de fabricación u operación. Justifica las propiedades y coeficientes con fuentes técnicas aplicables, valida el balance con un cálculo independiente y solicita revisión de ingeniería antes de tomar decisiones físicas o de seguridad.</p></div>
       </section>
-      <footer>THERMABIO <span>•</span> HERRAMIENTA ACADÉMICA DE DISEÑO <span class="footer-right">100% LOCAL · SIN SERVICIOS EXTERNOS</span></footer>
+      <footer>THERMABIO <span>•</span> HERRAMIENTA ACADÉMICA DE DISEÑO <span class="footer-right">CÁLCULO EN EL DISPOSITIVO · SIN SERVICIOS EXTERNOS</span></footer>
     </main>
   </div>
   <div id="toast" class="toast" role="status" aria-live="polite"></div>

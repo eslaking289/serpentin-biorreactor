@@ -80,3 +80,15 @@ body,main{background:#f3f5f3;color:#202923}
 .equation{background:#f0f4f0;border-color:#dce4dd;color:#35583c}.method-card p,.method-note p,.method-note li{color:#657269}.method-note h3{color:#34483a}
 .method-warning{background:#f7f4eb;border-color:#e6dcc2}.method-warning b{color:#6e5b32}.method-warning p{color:#746b58}
 @media(max-width:650px){.sidebar{background:#e8ede9;border-bottom-color:#d4ddd6}}
+
+/* Ecuaciones: notación matemática legible y fracciones apiladas, también en móvil. */
+.equation{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:5px 8px;min-height:43px;padding:10px 12px;background:#f8faf8;border-color:#e2e9e3;border-radius:6px;color:#263c2d;text-align:center;font:500 13px/1.55 Cambria,"Times New Roman",serif;overflow-wrap:normal}
+.equation sub,.equation sup{font-size:.72em;line-height:0}
+.equation-tall{font-size:13px}
+.fraction{display:inline-flex;flex-direction:column;align-items:stretch;vertical-align:middle;text-align:center;line-height:1.25;white-space:nowrap}
+.fraction>span:first-child{padding:0 4px 3px;border-bottom:1px solid currentColor}
+.fraction>span:last-child{padding:3px 4px 0}
+.formula-separator{margin-left:9px}
+.equation-long{column-gap:7px}
+@media(max-width:800px){.equation{font-size:12px;padding:9px 8px}.equation-tall{font-size:12px}}
+@media(max-width:380px){.equation{font-size:11px;gap:5px}.formula-separator{margin-left:3px}}
