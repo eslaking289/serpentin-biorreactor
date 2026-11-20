@@ -20,7 +20,7 @@ Se aceptó que el usuario introduzca la entalpía molar, la tasa de consumo y co
 
 La potencia térmica metabólica se estima como el producto de magnitud de entalpía molar, consumo molar y fracción de calor liberado al caldo, con conversión de horas a segundos. Se suma la potencia de agitación disipada.
 
-El refrigerante circula por el interior del tubo y el caldo baña el exterior. El caudal requerido se calcula con el balance sensible para el salto de temperatura especificado. Ese caudal permite estimar velocidad, Reynolds, Prandtl y el coeficiente interior con Gnielinski y una corrección helicoidal aproximada. El coeficiente global referido al área exterior suma las resistencias de película interior, conducción cilíndrica de pared, película exterior y ensuciamiento. El área usa la diferencia media logarítmica entre el caldo uniforme y las temperaturas de entrada/salida del refrigerante. Las vueltas y altura son una aproximación geométrica helicoidal.
+El refrigerante circula por el interior del tubo y el caldo baña el exterior. El caudal requerido se calcula con el balance sensible para el salto de temperatura especificado. El flujo interior se clasifica como laminar (Re < 2300), transición (2300 ≤ Re < 4000) o turbulento (Re ≥ 4000); los umbrales son referencias de tubo recto y no predicen por sí solos la transición en una hélice. Gnielinski se usa desde Re = 3000, de modo que parte del intervalo de transición tiene aviso explícito. Para Re < 2300 se mantiene Nu = 3.66 como referencia de tubo recto sin corrección Dean; la app advierte que hᵢ no representa de manera validada el efecto de la curvatura. No se incorporó una correlación helicoidal laminar única porque depende de Dean, Pr, geometría y condición térmica de pared. En transición se interpolan Nu y factor de fricción, señalados como aproximaciones. El coeficiente global referido al área exterior suma las resistencias de película interior, conducción cilíndrica de pared, película exterior y ensuciamiento. El área usa la diferencia media logarítmica entre el caldo uniforme y las temperaturas de entrada/salida del refrigerante. Las vueltas y altura son una aproximación geométrica helicoidal.
 
 El balance sensible usa propiedades editables del refrigerante; los valores por defecto aproximan agua líquida. El usuario debe justificar los datos elegidos. La tasa molar y la entalpía deben corresponder a la misma especie de referencia; los valores por defecto usan oxígeno. Las ecuaciones y unidades están en `README.md` y en la metodología de la interfaz.
 
@@ -50,24 +50,30 @@ La primera versión define tres archivos separados: `index.html` para la interfa
 
 Un requisito central era operar sin conexión. Por ese motivo se retiró la importación de fuentes web y la interfaz usa fuentes del sistema; no carga imágenes, librerías ni recursos remotos.
 
-## 6. Verificación pendiente para el equipo
+## 6. Verificación independiente y casos límite
 
-La verificación académica aún debe completarse antes de presentar resultados como confiables. Registrar aquí versiones, casos, resultados esperados independientes, resultados observados, diferencias y correcciones. Casos mínimos recomendados:
+El caso predeterminado se calculó de forma independiente sustituyendo los datos en las ecuaciones del apartado 3 y se comparó con `require('./core.js').design(valores)`. Se usaron `ΔH = 460 kJ/mol`, `OUR = 50 mol/h`, `f_calor = 1`, `P_ag = 1.2 kW`, `T_caldo = 30 °C`, `T_in = 10 °C`, `T_out = 18 °C`, `Cp = 4185 J/(kg·K)`, `ρ = 999 kg/m³`, `μ = 1.17 mPa·s`, `k_f = 0.589 W/(m·K)`, `D_o = 25 mm`, `e = 2 mm`, `k_p = 16 W/(m·K)`, `h_o = 1200 W/(m²·K)`, `R_f = 0.0002 m²·K/W`, tanque de 1.2 m, holgura radial 100 mm y paso 75 mm.
 
-1. Caso de referencia con valores calculados a mano en una hoja independiente.
-2. Cambiar el caudal de refrigerante y comprobar la variación de capacidad sensible.
-3. Cambiar `|ΔHr|` o consumo de sustrato y comprobar la proporcionalidad de la carga.
-4. Cambiar `hi`, `ho` o ensuciamiento y comprobar el sentido del cambio de `U` y área.
-5. Confirmar rechazo de perfiles de temperatura físicamente incompatibles y de dimensiones fuera de rango.
-6. Abrir la aplicación sin conexión y generar/abrir el CSV en el equipo de presentación.
+Pasos intermedios de comprobación: `D_i = 0.021 m`, `D_h = 0.975 m`; `Q_rxn = 460·50/3600 = 6.388889 kW`; `Q_total = 7.588889 kW`; `ṁ = 7588.889/[4185·(18−10)] = 0.226669 kg/s`; `ΔT₁ = 12 K`, `ΔT₂ = 20 K`, `ΔT_lm = 15.660922 K`; `v = 0.655087 m/s`; `Re = 11746.21`; `Pr = 8.31316`; `De = Re·√(D_i/D_h) = 1723.87`.
 
-| Fecha / versión | Caso y método independiente | Resultado esperado | Resultado observado | Conclusión / responsable |
-|---|---|---|---|---|
-| Pendiente | Completar por el equipo | Pendiente | Pendiente | Pendiente |
+| Resultado | Cálculo independiente | Node (`core.js`) | Diferencia |
+|---|---:|---:|---:|
+| Q metabólico (kW) | 6.388889 | 6.388889 | < 1e-9 relativo |
+| Q total (kW) | 7.588889 | 7.588889 | < 1e-9 relativo |
+| Caudal requerido (kg/s) | 0.226669 | 0.226669 | < 1e-9 relativo |
+| Re / Pr | 11746.21 / 8.31316 | 11746.21 / 8.31316 | < 1e-9 relativo |
+| Nu / hᵢ (W/m²·K) | 98.35714 / 2966.646 | 98.35714 / 2966.646 | < 1e-9 relativo |
+| U exterior (W/m²·K) | 636.605 | 636.605 | < 1e-9 relativo |
+| ΔTlm (K) | 15.660922 | 15.660922 | < 1e-9 relativo |
+| Área / longitud (m² / m) | 0.761187 / 9.691729 | 0.761187 / 9.691729 | < 1e-9 relativo |
+| Vueltas / altura (m) | 3.163127 / 0.237235 | 3.163127 / 0.237235 | < 1e-9 relativo |
+| ΔP (Pa, tubo recto equivalente) | 2978.312 | 2978.312 | < 1e-9 relativo |
+
+La verificación automatizada sin framework se ejecuta con `node test/verify.js`. Incluye el caso de referencia, Re = 2300/3000/4000, continuidad de Nu y factor Darcy, LMTD igual y casi igual, diámetro interior inválido, paso menor que Do, hélice inviable, carga cero, entrada incompleta/no finita, decimal 30.3 °C, invalidación de indicadores en modo quiet, ciclo de vida de URL para CSV y fallo de icono opcional durante instalación del Service Worker.
 
 ## 7. Limitaciones conocidas y trabajo futuro
 
-No se incluye un balance de materia/estequiometría integrado, cálculo de h_o desde el movimiento del caldo, perfil acoplado del refrigerante, pérdidas de presión helicoidales y locales, diseño hidráulico completo, transferencia de oxígeno, dinámica de control ni diseño mecánico. h_i y la caída de presión son estimaciones correlacionales con alcance limitado. Como trabajo futuro, se recomienda validar el caso de referencia con un cálculo independiente, ampliar la correlación hidráulica para hélices y documentar bibliografía aplicable.
+No se incluye un balance de materia/estequiometría integrado, cálculo de h_o desde el movimiento del caldo, perfil acoplado del refrigerante, pérdidas de presión helicoidales y locales, diseño hidráulico completo, transferencia de oxígeno, dinámica de control ni diseño mecánico. Nu = 3.66 laminar no corrige Dean; las interpolaciones de transición son aproximadas; ΔP es tubo recto equivalente. hᵢ y la caída de presión no sirven por sí solos para dimensionamiento final. El caso de referencia numérico coincide con cálculo independiente; aún debe verificarse el modelo contra datos experimentales/una correlación helicoidal validada para la geometría real.
 
 ## 8. Guion breve para la demostración
 
@@ -79,4 +85,10 @@ No se incluye un balance de materia/estequiometría integrado, cálculo de h_o d
 
 ## 9. Correcciones de la segunda versión
 
-Se invirtieron los lados de transferencia: ahora el refrigerante va por dentro del tubo y el caldo por fuera, como en un serpentín real. El caudal de refrigerante pasó de dato supuesto a resultado (m = Q / (Cp ΔT)), porque antes la ΔTlm y la capacidad sensible podían ser incompatibles. El coeficiente interior se calcula con Gnielinski y corrección helicoidal. La hélice deja holgura a la pared y se valida que el paso no sea menor que el diámetro del tubo. Se quitó el `step` rígido de los campos, que invalidaba valores como 30.3 °C. Los valores por defecto se ajustaron a una carga de unos 7.6 kW. Pendiente: contrastar el caso de referencia con un cálculo manual independiente.
+Se invirtieron los lados de transferencia: ahora el refrigerante va por dentro del tubo y el caldo por fuera, como en un serpentín real. El caudal de refrigerante pasó de dato supuesto a resultado (m = Q / (Cp ΔT)), porque antes la ΔTlm y la capacidad sensible podían ser incompatibles. La hélice deja holgura a la pared y se valida que el paso no sea menor que el diámetro del tubo. Se quitó el `step` rígido de los campos, que invalidaba valores como 30.3 °C. Los valores por defecto se ajustaron a una carga de unos 7.6 kW. La verificación independiente y sus límites están documentados en la sección 6.
+
+## 10. Revisión de robustez del modelo web
+
+Se unificaron los avisos con los dominios de cada correlación: Re < 2300 laminar; 2300–4000 transicional; Re ≥ 4000 turbulento, y Gnielinski se considera desde Re = 3000 con su propio aviso de rango. `Nu = 3.66` se declara referencia de tubo recto, no correlación laminar de hélice; la interfaz muestra Dean y advierte que no se modela el efecto Dean en laminar. El factor de curvatura se mezcla suavemente entre Re 2300–3000. El factor Darcy también se interpola en transición y la caída de presión queda expresamente limitada a tubo recto equivalente.
+
+Se añadieron validaciones de objeto, campos finitos, propiedades y dimensiones al motor independiente del DOM. El cálculo LMTD usa `log1p` cerca de diferencias iguales y rechaza entradas no positivas. La aplicación limpia los indicadores cuando una entrada en modo quiet es inválida. El enlace del CSV se agrega al DOM y su URL se revoca un segundo después del click. El Service Worker usa `thermabio-v3`; los archivos esenciales siguen siendo obligatorios y los iconos se intentan guardar por separado para que un icono ausente no aborte la instalación. La estrategia network-first ahora recurre a caché también ante respuestas HTTP no exitosas.

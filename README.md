@@ -46,18 +46,23 @@ El modelo considera el refrigerante dentro del tubo y el caldo por fuera. Calcul
 ```text
 Q = |ΔH_r| · n_r · f_calor / 3600 + P_agitación           [kW]
 m_req = 1000 · Q / (Cp · (T_salida − T_entrada))         [kg/s]
-v = 4 m_req / (ρ π Di²)     Re = 4 m_req / (π Di μ)     Pr = μ Cp / k_f
-Nu = 3.66 (Re < 2300) | interpolación 2300–3000 | Gnielinski (Re ≥ 3000)
-h_i = Nu k_f / Di · (1 + 3.5 Di / D_hélice)   (corrección helicoidal si Re ≥ 2300)
+v = 4 m_req / (ρ π Di²)     Re = 4 m_req / (π Di μ)     Pr = μ Cp / k_f     De = Re √(Di / D_hélice)
+Nu = 3.66 (Re < 2300; referencia de tubo recto) | interpolación 2300–3000 | Gnielinski (Re ≥ 3000)
+h_i = Nu k_f / Di · [1 + w · 3.5 Di / D_hélice], w = clamp((Re − 2300)/700, 0, 1)
 1/Uo = 1/ho + Rf + Do ln(Do/Di)/(2 k_pared) + Do/(Di h_i)
 ΔTlm = (ΔT_fría − ΔT_caliente) / ln(ΔT_fría / ΔT_caliente)
 A = 1000 Q / (Uo ΔTlm)     L = A / (π Do)
 D_hélice = D_tanque − 2 · holgura − Do
-f_D = 64/Re (Re < 2300) | [0.79 ln(Re) − 1.64]⁻² (Re ≥ 2300; aproximación)
-ΔP ≈ f_D (L/Di) ρ v² / 2   (tubo recto equivalente, orientativo)
+f_D = 64/Re (Re ≤ 2300) | interpolación lineal a f_Gn (2300 < Re < 4000) | f_Gn (Re ≥ 4000)
+f_Gn = [0.79 ln(Re) − 1.64]⁻²
+ΔP ≈ f_D (L/Di) ρ v² / 2   (Darcy–Weisbach de tubo recto equivalente)
 ```
 
-Se usa Cp en J/(kg·K), viscosidad μ en Pa·s dentro de la ecuación (la entrada en mPa·s se convierte en el código), conductividad del refrigerante en W/(m·K), densidad en kg/m³ y diámetros en m. El factor 1000 convierte kW a W al determinar el caudal y el área. La correlación de Gnielinski se reporta como orientativa en 3000 ≤ Re ≤ 5×10⁶ y 0.5 ≤ Pr ≤ 2000; la transición y el multiplicador helicoidal son aproximaciones. La caída de presión aplica una aproximación de tubo recto a la longitud calculada y no incorpora curvatura, accesorios ni pérdidas locales. `core.js` contiene los cálculos sin DOM y `app.js` la interfaz y exportación.
+Se usa Cp en J/(kg·K), viscosidad μ en Pa·s dentro de las ecuaciones (la entrada en mPa·s se convierte en el código), conductividad en W/(m·K), densidad en kg/m³ y diámetros en m. El factor 1000 convierte kW a W. El programa clasifica Re < 2300 como laminar, 2300 ≤ Re < 4000 como transición y Re ≥ 4000 como turbulento; esos límites son referencias de tubo recto y no predicen por sí solos la transición de una hélice. Gnielinski se usa desde Re = 3000, dentro de su intervalo orientativo 3000 ≤ Re ≤ 5×10⁶ y 0.5 ≤ Pr ≤ 2000. Por ello, 3000 ≤ Re < 4000 recibe aviso de flujo transicional aunque el número esté en el intervalo de la correlación.
+
+Para Re < 2300, Nu = 3.66 se conserva solo como referencia de tubo recto completamente desarrollado con pared a temperatura constante; no incorpora el efecto Dean de una hélice. No se extrapola una correlación laminar helicoidal única porque los resultados dependen de Dean, Pr, curvatura, desarrollo térmico y condición de pared. El resultado hᵢ se marca incierto en ese régimen. La corrección helicoidal simplificada se interpola entre Re 2300–3000 y no reemplaza una correlación validada para la geometría real.
+
+ΔP es solo Darcy–Weisbach de tubo recto equivalente. No incluye aumento de fricción por curvatura, accesorios ni pérdidas locales y no debe usarse para seleccionar la bomba. Los experimentos y correlaciones de hélices disponibles dependen de Reynolds y geometría. `core.js` contiene los cálculos sin DOM y `app.js` la interfaz y exportación.
 
 ## Supuestos y límites
 
@@ -67,7 +72,8 @@ El programa no calcula la entalpía desde la estequiometría, no calcula h_o des
 
 ## Referencias técnicas del modelo
 
-- Gnielinski, V. (1975). “New equations for heat and mass transfer in turbulent pipe and channel flow”. *Forschung im Ingenieurwesen*, 41, 8–16. [Registro bibliográfico](https://ui.adsabs.harvard.edu/abs/1975STIA...7522028G/abstract).
+- Gnielinski, V. (1976). “New Equations for Heat and Mass Transfer in Turbulent Pipe and Channel Flow”. *International Chemical Engineering*, 16(2), 359–368. [Registro de la Biblioteca Nacional de Japón](https://ndlsearch.ndl.go.jp/books/R100000136-I1570854174985140864).
+- Patankar, S. V., Pratap, V. S. & Spalding, D. B. (1974). “Prediction of Laminar Flow and Heat Transfer in Helically Coiled Pipes”. *Journal of Fluid Mechanics*, 62(3), 539–551. [Artículo](https://electronicsandbooks.com/edt/manual/Magazine/J/Journal%20of%20Fluid%20Mechanics/1974%20Volume%2062/S0022112074000796.pdf). Describe la dependencia de flujo secundario, transferencia y fricción con Dean y la curvatura; no se adopta como correlación general para todas las hélices.
 - Ali, S. (2001). “Pressure drop correlations for flow through regular helical coil tubes”. *Fluid Dynamics Research*, 28(4), 295–310. [Artículo](https://www.nagare.or.jp/download/noauth.html?d=p295_310.pdf&dir=16). Su trabajo muestra que las pérdidas en hélices dependen de Reynolds y geometría; por eso la caída de presión aquí se marca como aproximación de tubo recto.
 
 Las referencias respaldan correlaciones generales, no validan automáticamente cada geometría ni las entradas de esta herramienta. El rango indicado para Gnielinski y la corrección helicoidal requieren comprobarse contra la edición de bibliografía y las condiciones del caso real.
@@ -81,7 +87,8 @@ Las referencias respaldan correlaciones generales, no validan automáticamente c
 - `MEMORIA.md`: alcance, decisiones, registro de apoyo con IA y pendientes de verificación del equipo.
 - `manifest.webmanifest`: configuración de instalación como aplicación.
 - `service-worker.js`: almacenamiento local de los archivos para su uso sin conexión.
-- `icons/icon.svg`: icono de la aplicación.
+- `icons/icon.svg`, `icons/icon-192.png`, `icons/icon-512.png`: iconos de la aplicación web instalable.
+- `test/verify.js`: verificación independiente y casos límite; ejecutar con `node test/verify.js`.
 - `android/`: proyecto Android nativo independiente del sitio web; no incluye permiso de internet.
 
 ## Compatibilidad
