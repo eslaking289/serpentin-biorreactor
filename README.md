@@ -4,7 +4,7 @@ Aplicación local para estimar la carga térmica de una fermentación aeróbica 
 
 **Aplicación web:** [Abrir ThermaBio](https://eslaking289.github.io/serpentin-biorreactor/)
 
-**APK nativa para Android:** descarga [ThermaBio para Android](https://github.com/eslaking289/serpentin-biorreactor/releases/download/apk-v1.3.0/ThermaBio-Android.apk). Esta aplicación está hecha en Java nativo, no abre ni necesita el sitio web, y no solicita permiso de internet.
+**APK nativa para Android:** descarga [ThermaBio para Android](https://github.com/eslaking289/serpentin-biorreactor/releases/download/apk-v1.4.0/ThermaBio-Android.apk). Esta aplicación está hecha en Java nativo, no abre ni necesita el sitio web, y no solicita permiso de internet.
 
 ## Inicio rápido
 
@@ -90,6 +90,10 @@ Las referencias respaldan correlaciones generales, no validan automáticamente c
 - `icons/icon.svg`, `icons/icon-192.png`, `icons/icon-512.png`: iconos de la aplicación web instalable.
 - `test/verify.js`: verificación independiente y casos límite; ejecutar con `node test/verify.js`.
 - `android/`: proyecto Android nativo independiente del sitio web; no incluye permiso de internet.
+
+### Base térmica de la APK
+
+La APK Android usa la entrada de calor volumétrico de la maqueta Stitch: Q_met = q_met · V_caldo, con q_met en kW/m³ y volumen en m³. El PWA mantiene la base molar Q_rxn = |ΔH_r| · OUR · f_calor / 3600; ambas bases son compatibles si q_met = |ΔH_r| · OUR · f_calor / (3600 · V_caldo). La APK supone explícitamente Q_pérdidas = 0, presenta las pérdidas hidráulicas como tubo recto equivalente y advierte que no sirven para seleccionar una bomba.
 
 ## Compatibilidad
 

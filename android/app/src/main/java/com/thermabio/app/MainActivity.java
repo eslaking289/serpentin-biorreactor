@@ -97,26 +97,27 @@ public class MainActivity extends Activity {
     }
 
     private void defineInputs() {
-        add("dh", "Calor liberado, |ΔHᵣ|", "kJ/mol", "Generación de calor", 460);
-        add("substrateRate", "Consumo molar de referencia (OUR)", "mol/h", "Generación de calor", 50);
-        add("heatFactor", "Factor de calor metabólico al caldo", "fracción", "Generación de calor", 1);
-        add("agitation", "Potencia de agitación disipada", "kW", "Generación de calor", 1.2);
-        add("tBroth", "Temperatura uniforme del caldo", "°C", "Temperaturas del proceso", 30);
+        add("qMet", "Calor metabólico específico", "kW/m³", "Calor metabólico y biomasa", 38);
+        add("volume", "Volumen de caldo", "m³", "Calor metabólico y biomasa", 1.2);
+        add("agitation", "Potencia disipada por agitación", "kW", "Calor metabólico y biomasa", 2.9);
+        add("tBroth", "Temperatura uniforme del caldo", "°C", "Temperaturas del proceso", 37);
         add("tIn", "Entrada del refrigerante", "°C", "Temperaturas del proceso", 10);
-        add("tOut", "Salida objetivo del refrigerante", "°C", "Temperaturas del proceso", 18);
-        add("coolantFlow", "Caudal másico disponible", "kg/s", "Temperaturas del proceso", 0.25);
-        add("hBroth", "Coeficiente externo del caldo, hₒ", "W/(m²·K)", "Transferencia y geometría", 1200);
-        add("cp", "Calor específico del refrigerante", "J/(kg·K)", "Transferencia y geometría", 4185);
-        add("rho", "Densidad del refrigerante", "kg/m³", "Transferencia y geometría", 999);
-        add("mu", "Viscosidad dinámica del refrigerante", "mPa·s", "Transferencia y geometría", 1.17);
-        add("kf", "Conductividad del refrigerante", "W/(m·K)", "Transferencia y geometría", 0.589);
-        add("wallK", "Conductividad de pared", "W/(m·K)", "Transferencia y geometría", 16);
-        add("wallT", "Espesor de pared", "mm", "Transferencia y geometría", 2);
+        add("tOut", "Salida objetivo del refrigerante", "°C", "Temperaturas del proceso", 15);
+        add("coolantFlow", "Caudal disponible", "kg/s", "Temperaturas del proceso", 2.5);
+        add("rho", "Densidad del refrigerante", "kg/m³", "Propiedades del refrigerante", 998);
+        add("cp", "Calor específico", "kJ/(kg·K)", "Propiedades del refrigerante", 4.18);
+        add("mu", "Viscosidad dinámica", "mPa·s", "Propiedades del refrigerante", 1.0);
+        add("kf", "Conductividad térmica", "W/(m·K)", "Propiedades del refrigerante", 0.6);
+        add("hBroth", "Coeficiente lado caldo, hₒ", "W/(m²·K)", "Propiedades del refrigerante", 1150);
+        add("wallK", "Conductividad de pared", "W/(m·K)", "Propiedades del refrigerante", 16.3);
         add("fouling", "Resistencia de ensuciamiento", "m²·K/W", "Transferencia y geometría", 0.0002);
-        add("tubeD", "Diámetro exterior del tubo", "mm", "Transferencia y geometría", 25);
-        add("tankD", "Diámetro interno del biorreactor", "m", "Transferencia y geometría", 1.2);
-        add("clearance", "Holgura radial a la pared", "mm", "Transferencia y geometría", 100);
-        add("pitch", "Separación vertical entre vueltas", "mm", "Transferencia y geometría", 75);
+        add("tubeD", "Diámetro exterior del tubo", "mm", "Geometría helicoidal", 25.4);
+        add("wallT", "Espesor de pared", "mm", "Geometría helicoidal", 1.65);
+        add("coilD", "Diámetro de hélice (línea central)", "mm", "Geometría helicoidal", 550);
+        add("tankD", "Diámetro interno del biorreactor", "mm", "Geometría helicoidal", 900);
+        add("clearance", "Holgura radial mínima", "mm", "Geometría helicoidal", 160);
+        add("pitch", "Paso entre vueltas", "mm", "Geometría helicoidal", 50);
+        add("tankHeight", "Altura útil disponible", "mm", "Geometría helicoidal", 1400);
     }
 
     private void add(String key, String label, String unit, String group, double value) {
@@ -153,7 +154,7 @@ public class MainActivity extends Activity {
         brandCopy.setOrientation(LinearLayout.VERTICAL);
         brandCopy.setPadding(dp(12), 0, 0, 0);
         brandCopy.addView(text("THERMABIO", 21, INK, true));
-        brandCopy.addView(text("DISEÑO TÉRMICO  /  100% OFFLINE", 10, MUTED, true));
+        brandCopy.addView(text("DISEÑO TÉRMICO  /  CÁLCULO LOCAL", 10, MUTED, true));
         brand.addView(brandCopy, new LinearLayout.LayoutParams(0, -2, 1));
         Button reset = smallButton("Restablecer");
         reset.setOnClickListener(v -> resetInputs());
@@ -173,18 +174,33 @@ public class MainActivity extends Activity {
         LinearLayout formCard = card();
         page.addView(formCard, margins(0, 0, 0, 16));
         String currentGroup = "";
+        LinearLayout fieldRow = null;
+        int fieldInGroup = 0;
         for (Spec spec : specs) {
             if (!spec.group.equals(currentGroup)) {
                 currentGroup = spec.group;
+                fieldRow = null;
+                fieldInGroup = 0;
                 TextView heading = text(currentGroup.toUpperCase(Locale.ROOT), 16, INK, true);
-                int groupAccent = currentGroup.equals("Generación de calor") ? TEAL : currentGroup.equals("Temperaturas del proceso") ? MAGENTA : YELLOW;
+                int groupAccent = currentGroup.equals("Calor metabólico y biomasa") ? YELLOW : currentGroup.equals("Temperaturas del proceso") ? MAGENTA : currentGroup.equals("Propiedades del refrigerante") ? TEAL : MAGENTA;
                 heading.setPadding(dp(10), dp(8), dp(10), dp(8));
                 heading.setBackground(rounded(groupAccent, 3, INK));
                 formCard.addView(heading, margins(0, 14, 0, 4));
                 TextView note = text(groupNote(currentGroup).toUpperCase(Locale.ROOT), 10, MUTED, true);
                 formCard.addView(note, margins(0, 0, 0, 8));
             }
-            addEditor(formCard, spec);
+            if (fieldInGroup % 2 == 0) {
+                fieldRow = new LinearLayout(this);
+                fieldRow.setOrientation(LinearLayout.HORIZONTAL);
+                fieldRow.setGravity(Gravity.TOP);
+                formCard.addView(fieldRow, margins(0, 0, 0, 8));
+            }
+            addEditor(fieldRow, spec);
+            fieldInGroup++;
+            if (fieldInGroup % 2 == 1 && specs.indexOf(spec) == specs.size() - 1) {
+                View spacer = new View(this);
+                fieldRow.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1));
+            }
         }
 
         Button calculate = new Button(this);
@@ -202,7 +218,7 @@ public class MainActivity extends Activity {
         });
         page.addView(calculate, margins(0, 0, 0, 16));
 
-        addScreenHeader(resultsScreen, "RESULTADOS TÉRMICOS Y MECÁNICOS", "SIMULACIÓN LOCAL  ·  100% OFFLINE");
+        addScreenHeader(resultsScreen, "RESULTADOS TÉRMICOS Y MECÁNICOS", "SIMULACIÓN LOCAL  ·  ACTUALIZACIÓN EN VIVO");
         LinearLayout output = card();
         resultsScreen.addView(output, margins(0, 0, 0, 12));
         TextView resultsTitle = text("RESULTADOS DEL DISEÑO", 20, INK, true);
@@ -244,16 +260,27 @@ public class MainActivity extends Activity {
         TextView methodTitle = text("METODOLOGÍA", 20, INK, true);
         method.addView(methodTitle, margins(0, 0, 0, 5));
         method.addView(text("FUNDAMENTO TÉRMICO · CÁLCULO LOCAL", 10, MUTED, true), margins(0, 0, 0, 12));
-        addMethodBlock(method, "01 / BALANCE DE CALOR", "Q_rxn = |ΔHᵣ| · OUR · f_calor / 3600\nQ_total = Q_rxn + P_agitación", TEAL);
-        addMethodBlock(method, "02 / CAPACIDAD Y FUERZA IMPULSORA", "ṁ_req = 1000 Q_total / [Cp (T_s − T_e)]\nΔTlm = (ΔT₁ − ΔT₂) / ln(ΔT₁ / ΔT₂)", YELLOW);
-        addMethodBlock(method, "03 / FLUJO INTERNO", "Re = 4ṁ / (π Di μ)    ·    Pr = μ Cp / k_f\nNu: 3.66 (laminar) · interpolación · Gnielinski", TEAL);
-        addMethodBlock(method, "04 / RESISTENCIAS TÉRMICAS", "1/Uₒ = 1/hₒ + Rf + Do ln(Do/Di)/(2 k_p) + Do/(Di hᵢ)\nA = 1000 Q_total / (Uₒ ΔTlm)    ·    L = A / (π Do)", MAGENTA);
-        addMethodBlock(method, "05 / GEOMETRÍA Y PRESIÓN", "D_hélice = D_tanque − 2 holgura − Do\nL_vuelta = √[(π D_hélice)² + paso²]    ·    ΔP ≈ f_D (L/Di) ρv²/2", YELLOW);
-        TextView assumptions = text("SUPUESTOS Y LÍMITES\nCaldo bien mezclado y a temperatura uniforme; propiedades constantes; hₒ ingresado; correlaciones y pérdidas en hélice aproximadas. Gnielinski es orientativa en 3,000 ≤ Re ≤ 5×10⁶ y 0.5 ≤ Pr ≤ 2,000. La caída de presión equivale a tubo recto y omite accesorios y pérdidas locales. Verifica unidades, propiedades y diseño mecánico antes de fabricar u operar.", 12, MUTED, false);
-        assumptions.setLineSpacing(dp(3), 1f);
-        assumptions.setPadding(dp(10), dp(10), dp(10), dp(10));
-        assumptions.setBackground(rounded(Color.WHITE, 0, INK));
-        method.addView(assumptions, margins(0, 4, 0, 8));
+        addMethodBlock(method, "01 / BALANCE TÉRMICO TOTAL", "Q_met = q_met · V_caldo\nQ_diseño = Q_met + P_agitación − Q_pérdidas\nEn esta versión: Q_pérdidas = 0", YELLOW);
+        addMethodBlock(method, "02 / DIFERENCIA MEDIA LOGARÍTMICA", "ΔT₁ = T_caldo − T_salida\nΔT₂ = T_caldo − T_entrada\nΔT_lm = (ΔT₂ − ΔT₁) / ln(ΔT₂ / ΔT₁)", TEAL);
+        addMethodBlock(method, "03 / COEFICIENTE GLOBAL (U) HELICOIDAL", "ṁ_req = Q_diseño / [Cp (T_s − T_e)]\nv = 4ṁ / (ρπDᵢ²)    ·    Re = 4ṁ / (πDᵢμ)\nPr = μCp/k_f    ·    Nu = correlación según Re\nhᵢ = (Nu k_f/Dᵢ) · [1 + 3.5 Dᵢ/D_hélice]", MAGENTA);
+        addMethodBlock(method, "04 / RESISTENCIAS Y ÁREA EXTERIOR", "1/Uₒ = 1/hₒ + R_f + Dₒ ln(Dₒ/Dᵢ)/(2k_p)\n                  + Dₒ/(Dᵢhᵢ)\nAₒ = 1000 Q_diseño / (Uₒ ΔT_lm)\nL = Aₒ / (πDₒ)", TEAL);
+        addMethodBlock(method, "05 / GEOMETRÍA Y CAÍDA DE PRESIÓN", "Dᵢ = Dₒ − 2t_pared\nD_hélice = D_tanque − 2 holgura − Dₒ\nL_vuelta = √[(πD_hélice)² + paso²]\nN = L/L_vuelta    ·    H = N · paso\nΔP ≈ f_D (L/Dᵢ) (ρv²/2)", Color.BLACK);
+        LinearLayout assumptions = card();
+        TextView assumptionsTitle = text("SUPUESTOS Y LÍMITES", 16, INK, true);
+        assumptionsTitle.setBackground(rounded(MAGENTA, 0, INK));
+        assumptionsTitle.setPadding(dp(8), dp(6), dp(8), dp(6));
+        assumptions.addView(assumptionsTitle, margins(0, 0, 0, 8));
+        addAssumptionRow(assumptions, "Caldo perfectamente mezclado a temperatura uniforme; sin gradientes térmicos.", TEAL);
+        addAssumptionRow(assumptions, "q_met se ingresa desde datos o balance, en kW/m³; no lo predice esta app.", YELLOW);
+        addAssumptionRow(assumptions, "Pérdidas de calor al ambiente omitidas: Q_pérdidas = 0.", MAGENTA);
+        addAssumptionRow(assumptions, "Nu helicoidal simplificado; en laminar no corrige el número de Dean.", TEAL);
+        addAssumptionRow(assumptions, "ΔP de tubo recto equivalente; no incluye curvatura ni pérdidas locales.", YELLOW);
+        addAssumptionRow(assumptions, "Estimación preliminar: verificar propiedades, bomba y diseño mecánico por separado.", MAGENTA);
+        methodologyScreen.addView(assumptions, margins(0, 0, 0, 14));
+        Button toCalculator = smallButton("IR A LA CALCULADORA  →");
+        toCalculator.setBackground(projected(TEAL));
+        toCalculator.setOnClickListener(v -> showScreen(0));
+        methodologyScreen.addView(toCalculator, margins(0, 0, 0, 14));
 
         TextView disclaimer = text("ESTIMACIÓN ACADÉMICA PRELIMINAR. VERIFICA PROPIEDADES Y CORRELACIONES ANTES DE FABRICAR U OPERAR UN EQUIPO.", 11, MUTED, true);
         disclaimer.setLineSpacing(dp(3), 1f);
@@ -267,9 +294,9 @@ public class MainActivity extends Activity {
         navigation.setGravity(Gravity.CENTER);
         navigation.setPadding(dp(10), dp(7), dp(10), dp(7));
         navigation.setBackground(projected(PAPER));
-        addNavigationItem(navigation, "01  CALCULAR", TEAL, 0);
-        addNavigationItem(navigation, "02  RESULTADOS", YELLOW, 1);
-        addNavigationItem(navigation, "03  MÉTODO", MAGENTA, 2);
+        addNavigationItem(navigation, "☷\nCALCULADORA", TEAL, 0);
+        addNavigationItem(navigation, "▤\nRESULTADOS", YELLOW, 1);
+        addNavigationItem(navigation, "▧\nMETODOLOGÍA", MAGENTA, 2);
         FrameLayout.LayoutParams navParams = new FrameLayout.LayoutParams(-1, dp(64), Gravity.BOTTOM);
         root.addView(navigation, navParams);
         setContentView(root);
@@ -280,15 +307,32 @@ public class MainActivity extends Activity {
         block.setOrientation(LinearLayout.VERTICAL);
         block.setPadding(dp(10), dp(8), dp(10), dp(8));
         block.setBackground(projected(PAPER));
-        TextView heading = text(title, 11, INK, true);
+        TextView heading = text(title, 11, accent == Color.BLACK ? Color.WHITE : INK, true);
         heading.setBackground(rounded(accent, 0, INK));
         heading.setPadding(dp(8), dp(6), dp(8), dp(6));
         block.addView(heading);
         TextView formula = text(equation, 12, INK, true);
         formula.setTypeface(monoTypeface);
         formula.setLineSpacing(dp(3), 1f);
+        formula.setPadding(dp(8), dp(8), dp(8), dp(8));
+        formula.setBackground(rounded(BG, 0, INK));
         block.addView(formula, margins(0, 5, 0, 0));
         parent.addView(block, margins(0, 0, 0, 8));
+    }
+
+    private void addAssumptionRow(LinearLayout parent, String copy, int accent) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(7), dp(7), dp(7), dp(7));
+        row.setBackground(rounded(BG, 0, INK));
+        TextView mark = text("✓", 13, INK, true);
+        mark.setGravity(Gravity.CENTER);
+        mark.setBackground(rounded(accent, 0, INK));
+        row.addView(mark, new LinearLayout.LayoutParams(dp(27), dp(27)));
+        TextView label = text(copy, 11, INK, false);
+        label.setPadding(dp(8), 0, 0, 0);
+        row.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
+        parent.addView(row, margins(0, 0, 0, 6));
     }
 
     private void addNavigationItem(LinearLayout parent, String title, int accent, int destination) {
@@ -326,7 +370,7 @@ public class MainActivity extends Activity {
         copy.setOrientation(LinearLayout.VERTICAL);
         copy.setPadding(dp(10), 0, 0, 0);
         copy.addView(text("THERMABIO", 19, INK, true));
-        copy.addView(text("● OFFLINE  ·  CÁLCULO EN EL DISPOSITIVO", 9, INK, true));
+        copy.addView(text("● SIN RED  ·  CÁLCULO EN EL DISPOSITIVO", 9, INK, true));
         brand.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
         screen.addView(brand, margins(0, 4, 0, 18));
         TextView heading = text(title, 25, INK, true);
@@ -399,22 +443,24 @@ public class MainActivity extends Activity {
     }
 
     private String groupNote(String group) {
-        if (group.equals("Generación de calor")) return "Balance de energía de fermentación";
+        if (group.equals("Calor metabólico y biomasa")) return "Calor volumétrico y potencia disipada";
         if (group.equals("Temperaturas del proceso")) return "Fuerza impulsora y capacidad de refrigeración";
+        if (group.equals("Propiedades del refrigerante")) return "Propiedades del agua y coeficiente exterior";
         return "Propiedades, coeficientes y dimensiones del serpentín";
     }
 
     private void addEditor(LinearLayout parent, Spec spec) {
         LinearLayout cell = new LinearLayout(this);
         cell.setOrientation(LinearLayout.VERTICAL);
-        TextView label = text(spec.label, 14, INK, true);
-        cell.addView(label, margins(0, 6, 0, 6));
+        TextView label = text(spec.label.toUpperCase(Locale.ROOT), 10, INK, true);
+        label.setMinHeight(dp(30));
+        cell.addView(label, margins(0, 4, 0, 4));
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setBackground(rounded(Color.WHITE, 3, INK));
         EditText edit = new EditText(this);
         edit.setSingleLine(true);
-        edit.setTextSize(16);
+        edit.setTextSize(15);
         edit.setTypeface(monoTypeface);
         edit.setTextColor(INK);
         edit.setSelectAllOnFocus(true);
@@ -425,9 +471,11 @@ public class MainActivity extends Activity {
         edit.setText(saved);
         editors.put(spec.key, edit);
         row.addView(edit, new LinearLayout.LayoutParams(0, -2, 1));
-        TextView unit = text(spec.unit, 12, MUTED, false);
+        TextView unit = text(spec.unit, 10, MUTED, false);
         unit.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
-        int unitAccent = spec.group.equals("Temperaturas del proceso") ? MAGENTA : spec.group.equals("Transferencia y geometría") ? YELLOW : TEAL;
+        int unitAccent = spec.group.equals("Temperaturas del proceso") ? MAGENTA :
+                spec.group.equals("Propiedades del refrigerante") ? TEAL :
+                spec.group.equals("Geometría helicoidal") ? MAGENTA : YELLOW;
         unit.setTextColor(INK);
         unit.setBackground(rounded(unitAccent, 3, INK));
         unit.setPadding(dp(8), dp(5), dp(8), dp(5));
@@ -435,7 +483,9 @@ public class MainActivity extends Activity {
         unitParams.setMargins(0, dp(5), dp(5), dp(5));
         row.addView(unit, unitParams);
         cell.addView(row);
-        parent.addView(cell, margins(0, 0, 0, 6));
+        LinearLayout.LayoutParams cellParams = new LinearLayout.LayoutParams(0, -2, 1f);
+        cellParams.setMargins(dp(3), 0, dp(5), dp(6));
+        parent.addView(cell, cellParams);
         edit.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
@@ -475,28 +525,34 @@ public class MainActivity extends Activity {
         List<String> errors = new ArrayList<>();
         double doM = get(v, "tubeD") / 1000, wallM = get(v, "wallT") / 1000;
         double di = doM - 2 * wallM;
-        double coilD = get(v, "tankD") - 2 * get(v, "clearance") / 1000 - doM;
+        double coilD = get(v, "coilD") / 1000;
+        double tankD = get(v, "tankD") / 1000;
+        double clearance = get(v, "clearance") / 1000;
         if (!(get(v, "tBroth") > get(v, "tOut") && get(v, "tBroth") > get(v, "tIn"))) errors.add("El caldo debe estar a mayor temperatura que ambas corrientes de refrigerante.");
         if (!(get(v, "tOut") > get(v, "tIn"))) errors.add("La salida del refrigerante debe ser mayor que su entrada.");
-        if (get(v, "dh") <= 0 || get(v, "substrateRate") < 0 || get(v, "heatFactor") < 0 || get(v, "heatFactor") > 1 || get(v, "agitation") < 0) errors.add("Revisa entalpía, consumo, factor de calor y potencia de agitación.");
-        for (String key : new String[]{"cp", "rho", "mu", "kf", "tubeD", "wallT", "wallK", "pitch", "tankD", "hBroth"}) if (get(v, key) <= 0) errors.add("Las propiedades, dimensiones y coeficiente externo deben ser positivos.");
+        if (get(v, "qMet") < 0 || get(v, "volume") <= 0 || get(v, "agitation") < 0) errors.add("q_met y agitación no pueden ser negativos; el volumen debe ser positivo.");
+        for (String key : new String[]{"cp", "rho", "mu", "kf", "tubeD", "wallT", "wallK", "pitch", "tankD", "tankHeight", "coilD", "hBroth"}) if (get(v, key) <= 0) errors.add("Las propiedades, dimensiones y coeficiente externo deben ser positivos.");
         if (get(v, "coolantFlow") < 0 || get(v, "clearance") < 0 || get(v, "fouling") < 0) errors.add("Caudal, holgura y ensuciamiento no pueden ser negativos.");
         if (di <= 0) errors.add("El espesor de pared deja un diámetro interior nulo o negativo.");
         if (get(v, "pitch") / 1000 < doM) errors.add("El paso entre vueltas no puede ser menor que el diámetro exterior del tubo.");
         if (coilD <= doM) errors.add("El diámetro de hélice debe superar el diámetro exterior del tubo.");
+        if (coilD + doM + 2 * clearance > tankD) errors.add("La hélice, el tubo y las holguras no caben dentro del diámetro del biorreactor.");
         if (!errors.isEmpty()) throw new IllegalArgumentException(errors.get(0));
 
-        double qReaction = get(v, "dh") * get(v, "substrateRate") * get(v, "heatFactor") / 3600;
-        double qTotal = qReaction + get(v, "agitation");
+        double qReaction = get(v, "qMet") * get(v, "volume");
+        double qTotal = qReaction + get(v, "agitation"); // Q_pérdidas al ambiente = 0 según el supuesto del modelo
         if (!(qTotal > 0)) throw new IllegalArgumentException("La carga térmica total debe ser mayor que cero.");
         double lm = lmtd(get(v, "tBroth") - get(v, "tOut"), get(v, "tBroth") - get(v, "tIn"));
-        double mass = qTotal * 1000 / (get(v, "cp") * (get(v, "tOut") - get(v, "tIn")));
-        double mu = get(v, "mu") / 1000;
+        double mass = qTotal / (get(v, "cp") * (get(v, "tOut") - get(v, "tIn"))); // kW / [kJ/(kg K) K] = kg/s
+        double mu = get(v, "mu") / 1000; // mPa·s -> Pa·s
+        double cpJ = get(v, "cp") * 1000;
         double velocity = mass / (get(v, "rho") * Math.PI * di * di / 4);
         double re = 4 * mass / (Math.PI * di * mu);
-        double pr = mu * get(v, "cp") / get(v, "kf");
-        double hStraight = nusselt(re, pr) * get(v, "kf") / di;
-        double hi = re >= 2300 ? hStraight * (1 + 3.5 * di / coilD) : hStraight;
+        double pr = mu * cpJ / get(v, "kf");
+        double nu = nusselt(re, pr);
+        double curvatureWeight = Math.max(0, Math.min(1, (re - 2300) / 700));
+        double curvatureFactor = 1 + curvatureWeight * 3.5 * di / coilD;
+        double hi = nu * get(v, "kf") / di * curvatureFactor;
         double u = 1 / (doM / (di * hi) + doM * Math.log(doM / di) / (2 * get(v, "wallK")) + 1 / get(v, "hBroth") + get(v, "fouling"));
         double area = qTotal * 1000 / (u * lm);
         double length = area / (Math.PI * doM);
@@ -504,32 +560,59 @@ public class MainActivity extends Activity {
         double turnLength = Math.sqrt(Math.pow(Math.PI * coilD, 2) + pitch * pitch);
         double turns = length / turnLength;
         double height = turns * pitch;
-        double darcy = re < 2300 ? 64 / re : Math.pow(0.79 * Math.log(re) - 1.64, -2);
+        double darcy = darcyFactor(re);
         double pressure = darcy * (length / di) * get(v, "rho") * velocity * velocity / 2;
         double flowRatio = get(v, "coolantFlow") / mass;
+        for (double result : new double[]{lm, mass, velocity, re, pr, nu, hi, u, area, length, turns, height, darcy, pressure, flowRatio}) {
+            if (!Double.isFinite(result) || result < 0) throw new IllegalArgumentException("El resultado no es finito o físicamente válido; revisa unidades y dimensiones.");
+        }
+        boolean gnielinskiRange = re >= 3000 && re <= 5e6 && pr >= 0.5 && pr <= 2000;
+        boolean radialFit = coilD + doM + 2 * clearance <= tankD;
+        boolean heightFit = height + doM <= get(v, "tankHeight") / 1000;
         Map<String, String> out = new LinkedHashMap<>();
         out.put("Carga metabólica", f(qReaction) + " kW");
         out.put("Carga térmica total", f(qTotal) + " kW");
         out.put("LMTD", f(lm) + " K");
         out.put("Caudal másico requerido", f(mass) + " kg/s");
+        out.put("Caudal volumétrico requerido", f(mass / get(v, "rho") * 3600) + " m³/h");
         out.put("Caudal másico disponible", f(get(v, "coolantFlow")) + " kg/s");
         out.put("Velocidad interna", f(velocity) + " m/s");
         out.put("Número de Reynolds", f0(re) + " · " + regime(re));
         out.put("Número de Prandtl", f(pr));
+        out.put("Número de Nusselt", f(nu));
+        out.put("Número de Dean", f(re * Math.sqrt(di / coilD)));
         out.put("Coeficiente interno estimado", f0(hi) + " W/(m²·K)");
         out.put("Coeficiente global exterior", f0(u) + " W/(m²·K)");
         out.put("Área exterior requerida", f(area) + " m²");
         out.put("Longitud de tubo", f(length) + " m");
         out.put("Vueltas teóricas", f(turns));
         out.put("Altura centro a centro", f(height) + " m");
+        out.put("Ajuste radial", radialFit ? "Cabe según cotas ingresadas" : "No cabe");
+        out.put("Ajuste vertical", heightFit ? "Cabe según cotas ingresadas" : "No cabe en la altura útil");
         out.put("Caída de presión (tubo recto equivalente)", f(pressure / 1000) + " kPa");
         out.put("Estado del caudal", flowRatio >= 1 ? "Suficiente para el objetivo" : "Insuficiente para el objetivo");
-        out.put("Rango de Gnielinski", re >= 3000 && re <= 5e6 && pr >= 0.5 && pr <= 2000 ? "Dentro del rango orientativo" : "Fuera del rango; hᵢ orientativo");
+        out.put("Rango de Gnielinski", gnielinskiRange ? "Dentro del intervalo orientativo" : "Fuera del intervalo; hᵢ más incierto");
+        List<String> warnings = new ArrayList<>();
+        if (re < 2300) warnings.add("Laminar: Nu = 3.66 es de tubo recto; no corrige el efecto Dean en la hélice.");
+        if (re >= 2300 && re < 4000) warnings.add("Transición: el régimen y las interpolaciones dependen de la geometría helicoidal.");
+        if ((re >= 2300 && re < 3000) || !gnielinskiRange) warnings.add("La correlación de Gnielinski está fuera de su intervalo orientativo o se está interpolando.");
+        warnings.add("Nu helicoidal usa un multiplicador simplificado; no valida el serpentín real.");
+        warnings.add("ΔP usa tubo recto y subestima potencialmente la pérdida de la hélice; no dimensiona una bomba.");
+        if (velocity > 2.4) warnings.add("Alerta de cribado (> 2.4 m/s, no es un límite universal): verificar pérdida real, erosión, cavitación y criterio del proceso.");
+        if (!heightFit) warnings.add("La altura calculada excede la altura útil ingresada.");
+        out.put("Advertencias del modelo", String.join(" ", warnings));
         return out;
     }
 
     private double get(Map<String, Double> v, String key) { return v.get(key); }
     private String regime(double re) { return re >= 4000 ? "turbulento" : re >= 2300 ? "transición" : "laminar"; }
+    private double darcyFactor(double re) {
+        if (re <= 2300) return 64 / re;
+        double turbulentAt4000 = Math.pow(0.79 * Math.log(4000) - 1.64, -2);
+        if (re >= 4000) return Math.pow(0.79 * Math.log(re) - 1.64, -2);
+        double weight = (re - 2300) / (4000 - 2300);
+        return (64 / 2300) * (1 - weight) + turbulentAt4000 * weight;
+    }
     private double nusselt(double re, double pr) {
         if (re < 2300) return 3.66;
         if (re >= 3000) return gnielinski(re, pr);
@@ -541,24 +624,36 @@ public class MainActivity extends Activity {
         return (f / 8) * (re - 1000) * pr / (1 + 12.7 * Math.sqrt(f / 8) * (Math.pow(pr, 2.0 / 3.0) - 1));
     }
     private double lmtd(double d1, double d2) {
-        if (Math.abs(d1 - d2) < 1e-9 * Math.max(d1, d2)) return (d1 + d2) / 2;
-        return (d2 - d1) / Math.log(d2 / d1);
+        if (!(d1 > 0) || !(d2 > 0) || !Double.isFinite(d1) || !Double.isFinite(d2)) {
+            throw new IllegalArgumentException("Las diferencias de temperatura para ΔT_lm deben ser positivas y finitas.");
+        }
+        double rel = (d2 - d1) / d1;
+        if (Math.abs(rel) < 1e-8) return rel == 0 ? d1 : d1 * rel / Math.log1p(rel);
+        return (d2 - d1) / (Math.log(d2) - Math.log(d1));
     }
     private String f(double value) { return String.format(Locale.getDefault(), "%,.3f", value); }
     private String f0(double value) { return String.format(Locale.getDefault(), "%,.0f", value); }
 
     private void renderResults(Map<String, String> result) {
         resultValues.clear(); resultValues.putAll(result);
-        statusText.setText("Actualizado en vivo · cálculos realizados en este teléfono");
+        statusText.setText("Actualizado en vivo · cálculo ejecutado en este teléfono");
         statusText.setTextColor(INK);
         summaryGrid.removeAllViews(); resultRows.removeAllViews(); calculatorSummaryGrid.removeAllViews();
         populateSummaryGrid(summaryGrid, result);
         populateSummaryGrid(calculatorSummaryGrid, result);
         boolean flowInsufficient = result.get("Estado del caudal").startsWith("Insuficiente");
-        flowWarningText.setText(flowInsufficient
-                ? "ALERTA DE INGENIERÍA · EL CAUDAL DISPONIBLE NO CUBRE EL DEBER TÉRMICO. Aumenta el flujo disponible o revisa las temperaturas objetivo."
-                : "CAUDAL DISPONIBLE SUFICIENTE PARA EL DEBER TÉRMICO CALCULADO.");
-        flowWarningText.setBackground(rounded(flowInsufficient ? YELLOW : TEAL, 0, INK));
+        double velocity = Double.parseDouble(result.get("Velocidad interna").replace(" m/s", "").replace(',', '.'));
+        boolean heightDoesNotFit = result.get("Ajuste vertical").startsWith("No cabe");
+        boolean caution = flowInsufficient || velocity > 2.4 || heightDoesNotFit;
+        String message = flowInsufficient
+                ? "CAUDAL INSUFICIENTE · Aumenta el caudal disponible o revisa las temperaturas objetivo."
+                : heightDoesNotFit
+                    ? "LA HÉLICE EXCEDE LA ALTURA ÚTIL INGRESADA."
+                    : velocity > 2.4
+                        ? "VELOCIDAD INTERNA ALTA · Verifica presión real, erosión y cavitación; ΔP mostrado es de tubo recto."
+                        : "EL CAUDAL DISPONIBLE CUBRE EL BALANCE DE ENERGÍA · Revisa las advertencias del modelo.";
+        flowWarningText.setText(message);
+        flowWarningText.setBackground(rounded(caution ? YELLOW : TEAL, 0, INK));
         flowWarningText.setVisibility(View.VISIBLE);
         resultRows.removeAllViews();
         for (Map.Entry<String, String> entry : result.entrySet()) {

@@ -92,3 +92,22 @@ Se invirtieron los lados de transferencia: ahora el refrigerante va por dentro d
 Se unificaron los avisos con los dominios de cada correlación: Re < 2300 laminar; 2300–4000 transicional; Re ≥ 4000 turbulento, y Gnielinski se considera desde Re = 3000 con su propio aviso de rango. `Nu = 3.66` se declara referencia de tubo recto, no correlación laminar de hélice; la interfaz muestra Dean y advierte que no se modela el efecto Dean en laminar. El factor de curvatura se mezcla suavemente entre Re 2300–3000. El factor Darcy también se interpola en transición y la caída de presión queda expresamente limitada a tubo recto equivalente.
 
 Se añadieron validaciones de objeto, campos finitos, propiedades y dimensiones al motor independiente del DOM. El cálculo LMTD usa `log1p` cerca de diferencias iguales y rechaza entradas no positivas. La aplicación limpia los indicadores cuando una entrada en modo quiet es inválida. El enlace del CSV se agrega al DOM y su URL se revoca un segundo después del click. El Service Worker usa `thermabio-v3`; los archivos esenciales siguen siendo obligatorios y los iconos se intentan guardar por separado para que un icono ausente no aborte la instalación. La estrategia network-first ahora recurre a caché también ante respuestas HTTP no exitosas.
+
+## 11. Revisión de la APK nativa inspirada en Stitch
+
+Se conservaron la interfaz de tres pantallas, navegación inferior, papel crema, bordes negros marcados y acentos turquesa/amarillo/magenta. Se reemplazó el cálculo demostrativo del HTML de Stitch: no se fija U arbitrariamente ni se presentan como calculadas cifras de presión incompatibles con Darcy–Weisbach. La APK usa Q_met = q_met · V_caldo, Q_diseño = Q_met + P_agitación con pérdidas al ambiente omitidas (Q_pérdidas = 0); el caudal másico se calcula como ṁ = Q_diseño/[Cp(T_s−T_e)] usando Q en kW y Cp en kJ/(kg·K). Después calcula Reynolds, Prandtl, Nusselt, resistencias en serie, área exterior, longitud, vueltas, altura y una presión recta equivalente. Se agregaron verificaciones de ajuste radial/vertical y avisos por velocidad alta, transición, laminar helicoidal no corregido por Dean y pérdidas helicoidales omitidas.
+
+Comprobación aritmética del juego visible en Stitch (q_met=38 kW/m³, V=1.2 m³, P_ag=2.9 kW, T_caldo=37 °C, T_entrada=10 °C, T_salida=15 °C, agua aproximada a 20 °C, tubo D_o=25.4 mm, pared 1.65 mm, hélice 550 mm, paso 50 mm, h_o=1150 W/(m²·K), k_p=16.3 W/(m·K), R_f=0.0002 m²·K/W):
+
+| Magnitud | Cálculo con las ecuaciones de la APK |
+|---|---:|
+| Q_met / Q_diseño | 45.6 / 48.5 kW |
+| ΔT₁ / ΔT₂ / ΔT_lm | 22 / 27 / 24.414729 K |
+| Caudal requerido | 2.320574 kg/s (8.37 m³/h) |
+| v / Re / Pr / Nu / De | 6.061645 m/s / 133,694 / 6.9667 / 768.258 / 26,800 |
+| h_i / U_o | 23,791 / 815.46 W/(m²·K) |
+| Área / longitud | 2.4361 m² / 30.5285 m |
+| Vueltas / altura centro a centro | 17.6609 / 0.8830 m |
+| ΔP Darcy de tubo recto | 428.9 kPa |
+
+El valor de ΔT_lm en la pantalla de Stitch no corresponde a sus temperaturas de entrada (la diferencia correcta es 27 K, no 28 K). Su h_i=3200 W/(m²·K) no sale de Gnielinski con el caudal/diámetro indicados, y ΔP=18.6 kPa no coincide con Darcy recto (el cálculo de cribado supera 400 kPa antes de añadir la penalización de curvatura). Esto confirma que no debe mostrarse el resultado original como verificado. La tabla verifica la aritmética de la aproximación implementada; no es validación experimental ni una correlación hidráulica helicoidal apta para diseño final.
