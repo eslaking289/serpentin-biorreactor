@@ -4,7 +4,7 @@ Aplicación local para estimar la carga térmica de una fermentación aeróbica 
 
 **Aplicación web:** [Abrir ThermaBio](https://eslaking289.github.io/serpentin-biorreactor/)
 
-**APK nativa para Android:** descarga [ThermaBio para Android](https://github.com/eslaking289/serpentin-biorreactor/releases/download/apk-v1.4.1/ThermaBio-Android.apk). Esta aplicación está hecha en Java nativo, no abre ni necesita el sitio web, y no solicita permiso de internet.
+**APK nativa para Android:** descarga [ThermaBio para Android](https://github.com/eslaking289/serpentin-biorreactor/releases/download/apk-v1.4.2/ThermaBio-Android.apk). Esta aplicación está hecha en Java nativo, no abre ni necesita el sitio web, y no solicita permiso de internet.
 
 ## Inicio rápido
 
@@ -94,6 +94,12 @@ Las referencias respaldan correlaciones generales, no validan automáticamente c
 ### Base térmica de la APK
 
 La APK Android usa la entrada de calor volumétrico de la maqueta Stitch: Q_met = q_met · V_caldo, con q_met en kW/m³ y volumen en m³. El PWA mantiene la base molar Q_rxn = |ΔH_r| · OUR · f_calor / 3600; ambas bases son compatibles si q_met = |ΔH_r| · OUR · f_calor / (3600 · V_caldo). La APK supone explícitamente Q_pérdidas = 0, presenta las pérdidas hidráulicas como tubo recto equivalente y advierte que no sirven para seleccionar una bomba.
+
+## Modelo geométrico paramétrico
+
+El esquema frontal de la APK se actualiza con el diámetro y altura del tanque, el volumen de caldo, diámetro y paso de hélice, vueltas calculadas y longitud de tubo. El nivel de líquido se estima como cilindro ideal, `h = V/(πD²/4)`; el cálculo avisa cuando la hélice queda parcialmente fuera del caldo. Esa representación no es una vista de fabricación ni modela internos, boquillas, soportes o elipses del fondo.
+
+El archivo [CAD paramétrico](cad/thermabio_serpentin_parametrico.scad) abre con OpenSCAD y permite editar esas dimensiones fuera de la APK. OpenSCAD genera la hélice por extrusión lineal con giro; las ecuaciones de altura y capacidad, y las verificaciones geométricas están incluidas en el archivo. La pieza es conceptual y no está validada para fabricación mecánica. Ver [instrucciones del modelo CAD](cad/README.md).
 
 ## Compatibilidad
 

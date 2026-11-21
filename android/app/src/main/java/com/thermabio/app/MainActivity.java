@@ -8,6 +8,7 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ColorDrawable;
@@ -65,6 +66,7 @@ public class MainActivity extends Activity {
     private final List<Spec> specs = new ArrayList<>();
     private final Map<String, EditText> editors = new LinkedHashMap<>();
     private final Map<String, Double> values = new LinkedHashMap<>();
+    private final Map<String, Double> schematicResults = new LinkedHashMap<>();
     private final Map<String, String> resultValues = new LinkedHashMap<>();
     private final Map<String, String> resultUnits = new LinkedHashMap<>();
     private SharedPreferences preferences;
@@ -75,6 +77,7 @@ public class MainActivity extends Activity {
     private final Button[] navigationButtons = new Button[3];
     private final int[] navigationAccents = {TEAL, YELLOW, MAGENTA};
     private TextView statusText;
+    private CoilDiagramView coilDiagram;
     private ScrollView scrollView;
     private FrameLayout root;
     private LinearLayout calculatorScreen;
@@ -119,7 +122,7 @@ public class MainActivity extends Activity {
         add("tubeD", "Diámetro exterior del tubo", "mm", "Geometría helicoidal", 25.4);
         add("wallT", "Espesor de pared", "mm", "Geometría helicoidal", 1.65);
         add("coilD", "Diámetro de hélice (línea central)", "mm", "Geometría helicoidal", 550);
-        add("tankD", "Diámetro interno del biorreactor", "mm", "Geometría helicoidal", 900);
+        add("tankD", "Diámetro interno del biorreactor", "mm", "Geometría helicoidal", 1100);
         add("clearance", "Holgura radial mínima", "mm", "Geometría helicoidal", 160);
         add("pitch", "Paso entre vueltas", "mm", "Geometría helicoidal", 50);
         add("tankHeight", "Altura útil disponible", "mm", "Geometría helicoidal", 1400);
@@ -523,39 +526,168 @@ public class MainActivity extends Activity {
     private View coilSchematic() {
         FrameLayout diagram = new FrameLayout(this);
         diagram.setBackground(rounded(Color.WHITE, 0, INK));
-        View drawing = new View(this) {
-            private final Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
-            @Override protected void onDraw(Canvas canvas) {
-                super.onDraw(canvas);
-                float w = getWidth(), h = getHeight();
-                line.setStyle(Paint.Style.STROKE);
-                line.setStrokeWidth(dp(2));
-                line.setColor(TEAL);
-                Path coil = new Path();
-                float left = dp(20), right = w - dp(20), center = h * 0.47f, amplitude = h * 0.23f;
-                coil.moveTo(left, center);
-                int steps = 180;
-                for (int i = 1; i <= steps; i++) {
-                    float x = left + (right - left) * i / steps;
-                    float y = center + (float) Math.sin(i * 4f * (float) Math.PI / steps) * amplitude;
-                    coil.lineTo(x, y);
-                }
-                canvas.drawPath(coil, line);
-                line.setColor(INK);
-                line.setStrokeWidth(dp(1));
-                canvas.drawLine(left, dp(12), left, h - dp(12), line);
-                canvas.drawLine(right, dp(12), right, h - dp(12), line);
-                canvas.drawLine(left, dp(12), right, dp(12), line);
-                canvas.drawLine(left, h - dp(12), right, h - dp(12), line);
-            }
-        };
-        diagram.addView(drawing, new FrameLayout.LayoutParams(-1, dp(118)));
-        TextView caption = text("ESQUEMA CONCEPTUAL DEL SERPENTÍN  ·  NO A ESCALA", 9, MUTED, true);
+        coilDiagram = new CoilDiagramView(this);
+        diagram.addView(coilDiagram, new FrameLayout.LayoutParams(-1, dp(224)));
+        TextView caption = text("VISTA FRONTAL · COTAS ACTUALIZADAS CON LOS PARÁMETROS", 8, MUTED, true);
         caption.setGravity(Gravity.CENTER);
-        caption.setPadding(dp(5), dp(4), dp(5), dp(4));
+        caption.setPadding(dp(4), dp(3), dp(4), dp(3));
+        caption.setBackgroundColor(Color.WHITE);
         FrameLayout.LayoutParams captionParams = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
         diagram.addView(caption, captionParams);
         return diagram;
+    }
+
+    private final class CoilDiagramView extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final Path coilPath = new Path();
+        private final int liquidColor = Color.rgb(224, 241, 240);
+        private final int inletColor = Color.rgb(0, 111, 153);
+
+        CoilDiagramView(Context context) {
+            super(context);
+            setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        }
+
+        @Override protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            float width = getWidth(), height = getHeight();
+            canvas.drawColor(Color.WHITE);
+            paint.setTypeface(monoTypeface);
+            paint.setTextSize(dp(8));
+            paint.setColor(MUTED);
+            paint.setStyle(Paint.Style.FILL);
+            canvas.drawText("BIORREACTOR · VISTA FRONTAL", dp(8), dp(13), paint);
+
+            if (schematicResults.isEmpty()) {
+                paint.setColor(MAGENTA);
+                paint.setTextSize(dp(10));
+                canvas.drawText("Revisa las entradas para dibujar la geometría.", dp(12), height * .52f, paint);
+                return;
+            }
+
+            double tankD = schematicResults.get("tankDiameter");
+            double tankH = schematicResults.get("tankHeight");
+            double liquidH = schematicResults.get("liquidHeight");
+            double coilD = schematicResults.get("coilDiameter");
+            double tubeD = schematicResults.get("tubeDiameter");
+            double pitch = schematicResults.get("pitch");
+            double turns = schematicResults.get("turns");
+            double coilH = schematicResults.get("coilHeight");
+
+            float top = dp(23), bottomLimit = height - dp(48);
+            float scale = Math.min((width * .49f) / (float) tankD, (bottomLimit - top) / (float) tankH);
+            float tankPxW = (float) tankD * scale, tankPxH = (float) tankH * scale;
+            float left = width * .38f - tankPxW / 2, right = left + tankPxW;
+            float vesselTop = top + (bottomLimit - top - tankPxH) / 2;
+            float vesselBottom = vesselTop + tankPxH;
+            float wall = Math.max(dp(2), (float) (tubeD * scale * .22));
+            RectF body = new RectF(left, vesselTop, right, vesselBottom);
+            RectF inside = new RectF(left + wall, vesselTop + wall, right - wall, vesselBottom - wall);
+
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(Color.rgb(252, 250, 227));
+            canvas.drawRoundRect(body, dp(11), dp(11), paint);
+            float liquidY = inside.bottom - (float) liquidH * scale;
+            canvas.save();
+            canvas.clipRect(inside.left, Math.max(inside.top, liquidY), inside.right, inside.bottom);
+            paint.setColor(liquidColor);
+            canvas.drawRect(inside, paint);
+            canvas.restore();
+
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(2));
+            paint.setColor(INK);
+            canvas.drawRoundRect(body, dp(11), dp(11), paint);
+            canvas.drawOval(new RectF(left, vesselTop, right, vesselTop + dp(12)), paint);
+            canvas.drawOval(new RectF(left, vesselBottom - dp(12), right, vesselBottom), paint);
+            paint.setStrokeWidth(dp(1));
+            canvas.drawLine(inside.left, Math.max(inside.top, liquidY), inside.right, Math.max(inside.top, liquidY), paint);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setTextSize(dp(7));
+            paint.setColor(inletColor);
+            canvas.drawText("NIVEL", left + dp(4), Math.max(inside.top + dp(10), liquidY - dp(3)), paint);
+
+            float coilRadius = (float) coilD * scale / 2;
+            float tubeRadius = (float) tubeD * scale / 2;
+            float coilBottom = inside.bottom - tubeRadius - (float) tubeD * scale;
+            float coilTop = coilBottom - (float) coilH * scale;
+            int steps = Math.max(80, Math.min(2400, (int) Math.ceil(turns * 90)));
+            coilPath.reset();
+            for (int i = 0; i <= steps; i++) {
+                float fraction = i / (float) steps;
+                double theta = Math.PI * 2 * turns * fraction;
+                float x = (float) (left + tankPxW / 2 + coilRadius * Math.cos(theta));
+                float y = coilBottom - fraction * (float) coilH * scale;
+                if (i == 0) coilPath.moveTo(x, y); else coilPath.lineTo(x, y);
+            }
+            float tubeStroke = Math.max(dp(2), (float) tubeD * scale);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            paint.setStrokeJoin(Paint.Join.ROUND);
+            paint.setColor(INK);
+            paint.setStrokeWidth(tubeStroke + dp(2));
+            canvas.drawPath(coilPath, paint);
+            paint.setColor(TEAL);
+            paint.setStrokeWidth(tubeStroke);
+            canvas.drawPath(coilPath, paint);
+
+            float cx = left + tankPxW / 2;
+            float xStart = cx + coilRadius;
+            float xEnd = (float) (cx + coilRadius * Math.cos(Math.PI * 2 * turns));
+            drawFlowArrow(canvas, right - wall, coilBottom, xStart, coilBottom, inletColor);
+            float outletWall = xEnd >= cx ? right - wall : left + wall;
+            drawFlowArrow(canvas, xEnd, coilTop, outletWall, coilTop, MAGENTA);
+
+            float infoX = Math.min(width - dp(84), right + dp(10));
+            paint.setStyle(Paint.Style.FILL);
+            paint.setTypeface(monoTypeface);
+            paint.setTextSize(dp(8));
+            paint.setColor(INK);
+            float infoY = vesselTop + dp(22);
+            canvas.drawText("Dₕ " + f0(coilD * 1000) + " mm", infoX, infoY, paint);
+            canvas.drawText("N " + f(turns), infoX, infoY + dp(17), paint);
+            canvas.drawText("p " + f0(pitch * 1000) + " mm", infoX, infoY + dp(34), paint);
+            canvas.drawText("H " + f(coilH) + " m", infoX, infoY + dp(51), paint);
+            canvas.drawText("L " + f(schematicResults.get("tubeLength")) + " m", infoX, infoY + dp(68), paint);
+            canvas.drawText("Dₜ " + f0(tankD * 1000) + " mm", infoX, infoY + dp(85), paint);
+
+            paint.setColor(INK);
+            paint.setStrokeWidth(dp(1));
+            float dimensionY = vesselBottom + dp(8);
+            drawDimension(canvas, cx - coilRadius, dimensionY, cx + coilRadius, dimensionY, paint);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setTextSize(dp(7));
+            String diameterLabel = "Diámetro de hélice = " + f0(coilD * 1000) + " mm";
+            float labelWidth = paint.measureText(diameterLabel);
+            canvas.drawText(diameterLabel, cx - labelWidth / 2, dimensionY + dp(10), paint);
+        }
+
+        private void drawFlowArrow(Canvas canvas, float x1, float y1, float x2, float y2, int color) {
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(dp(2));
+            paint.setStrokeCap(Paint.Cap.ROUND);
+            paint.setColor(color);
+            canvas.drawLine(x1, y1, x2, y2, paint);
+            float angle = (float) Math.atan2(y2 - y1, x2 - x1);
+            float size = dp(5);
+            Path arrow = new Path();
+            arrow.moveTo(x2, y2);
+            arrow.lineTo((float) (x2 - size * Math.cos(angle - .55)), (float) (y2 - size * Math.sin(angle - .55)));
+            arrow.lineTo((float) (x2 - size * Math.cos(angle + .55)), (float) (y2 - size * Math.sin(angle + .55)));
+            arrow.close();
+            paint.setStyle(Paint.Style.FILL);
+            canvas.drawPath(arrow, paint);
+        }
+
+        private void drawDimension(Canvas canvas, float x1, float y1, float x2, float y2, Paint p) {
+            p.setStyle(Paint.Style.STROKE);
+            canvas.drawLine(x1, y1, x2, y2, p);
+            float a = dp(4);
+            canvas.drawLine(x1, y1, x1 + a, y1 - a, p);
+            canvas.drawLine(x1, y1, x1 + a, y1 + a, p);
+            canvas.drawLine(x2, y2, x2 - a, y2 - a, p);
+            canvas.drawLine(x2, y2, x2 - a, y2 + a, p);
+        }
     }
 
     private String groupNote(String group) {
@@ -615,6 +747,7 @@ public class MainActivity extends Activity {
 
     private void calculate(boolean notify) {
         values.clear();
+        schematicResults.clear();
         try {
             for (Spec spec : specs) {
                 String raw = editors.get(spec.key).getText().toString().trim().replace(',', '.');
@@ -633,6 +766,7 @@ public class MainActivity extends Activity {
             resultRows.removeAllViews();
             if (calculatorSummaryGrid != null) calculatorSummaryGrid.removeAllViews();
             if (flowWarningText != null) flowWarningText.setVisibility(View.GONE);
+            if (coilDiagram != null) coilDiagram.invalidate();
             if (notify) Toast.makeText(this, ex.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
@@ -643,6 +777,7 @@ public class MainActivity extends Activity {
         double di = doM - 2 * wallM;
         double coilD = get(v, "coilD") / 1000;
         double tankD = get(v, "tankD") / 1000;
+        double tankH = get(v, "tankHeight") / 1000;
         double clearance = get(v, "clearance") / 1000;
         if (!(get(v, "tBroth") > get(v, "tOut") && get(v, "tBroth") > get(v, "tIn"))) errors.add("El caldo debe estar a mayor temperatura que ambas corrientes de refrigerante.");
         if (!(get(v, "tOut") > get(v, "tIn"))) errors.add("La salida del refrigerante debe ser mayor que su entrada.");
@@ -653,6 +788,8 @@ public class MainActivity extends Activity {
         if (get(v, "pitch") / 1000 < doM) errors.add("El paso entre vueltas no puede ser menor que el diámetro exterior del tubo.");
         if (coilD <= doM) errors.add("El diámetro de hélice debe superar el diámetro exterior del tubo.");
         if (coilD + doM + 2 * clearance > tankD) errors.add("La hélice, el tubo y las holguras no caben dentro del diámetro del biorreactor.");
+        double tankCapacity = Math.PI * tankD * tankD / 4 * tankH;
+        if (get(v, "volume") > tankCapacity) errors.add("El volumen de caldo supera la capacidad cilíndrica aproximada del tanque.");
         if (!errors.isEmpty()) throw new IllegalArgumentException(errors.get(0));
 
         double qReaction = get(v, "qMet") * get(v, "volume");
@@ -684,7 +821,18 @@ public class MainActivity extends Activity {
         }
         boolean gnielinskiRange = re >= 3000 && re <= 5e6 && pr >= 0.5 && pr <= 2000;
         boolean radialFit = coilD + doM + 2 * clearance <= tankD;
-        boolean heightFit = height + doM <= get(v, "tankHeight") / 1000;
+        double liquidHeight = get(v, "volume") / (Math.PI * tankD * tankD / 4);
+        double assumedAxialClearance = doM;
+        boolean heightFit = height + doM + assumedAxialClearance <= liquidHeight;
+        schematicResults.put("coilDiameter", coilD);
+        schematicResults.put("tubeDiameter", doM);
+        schematicResults.put("tankDiameter", tankD);
+        schematicResults.put("tankHeight", tankH);
+        schematicResults.put("liquidHeight", liquidHeight);
+        schematicResults.put("pitch", pitch);
+        schematicResults.put("turns", turns);
+        schematicResults.put("coilHeight", height);
+        schematicResults.put("tubeLength", length);
         Map<String, String> out = new LinkedHashMap<>();
         out.put("Carga metabólica", f(qReaction) + " kW");
         out.put("Carga térmica total", f(qTotal) + " kW");
@@ -703,8 +851,11 @@ public class MainActivity extends Activity {
         out.put("Longitud de tubo", f(length) + " m");
         out.put("Vueltas teóricas", f(turns));
         out.put("Altura centro a centro", f(height) + " m");
+        out.put("Nivel de caldo (cilindro ideal)", f(liquidHeight) + " m");
+        out.put("Capacidad cilíndrica aproximada", f(tankCapacity) + " m³");
+        out.put("Holgura axial asumida", f(assumedAxialClearance * 1000) + " mm");
         out.put("Ajuste radial", radialFit ? "Cabe según cotas ingresadas" : "No cabe");
-        out.put("Ajuste vertical", heightFit ? "Cabe según cotas ingresadas" : "No cabe en la altura útil");
+        out.put("Ajuste vertical", heightFit ? "Sumergido bajo el nivel estimado" : "No queda totalmente sumergido");
         out.put("Caída de presión (tubo recto equivalente)", f(pressure / 1000) + " kPa");
         out.put("Estado del caudal", flowRatio >= 1 ? "Suficiente para el objetivo" : "Insuficiente para el objetivo");
         out.put("Rango de Gnielinski", gnielinskiRange ? "Dentro del intervalo orientativo" : "Fuera del intervalo; hᵢ más incierto");
@@ -715,7 +866,7 @@ public class MainActivity extends Activity {
         warnings.add("Nu helicoidal usa un multiplicador simplificado; no valida el serpentín real.");
         warnings.add("ΔP usa tubo recto y subestima potencialmente la pérdida de la hélice; no dimensiona una bomba.");
         if (velocity > 2.4) warnings.add("Alerta de cribado (> 2.4 m/s, no es un límite universal): verificar pérdida real, erosión, cavitación y criterio del proceso.");
-        if (!heightFit) warnings.add("La altura calculada excede la altura útil ingresada.");
+        if (!heightFit) warnings.add("La hélice supera el nivel de caldo estimado con el volumen y diámetro del tanque.");
         out.put("Advertencias del modelo", String.join(" ", warnings));
         return out;
     }
@@ -759,18 +910,19 @@ public class MainActivity extends Activity {
         populateSummaryGrid(calculatorSummaryGrid, result);
         boolean flowInsufficient = result.get("Estado del caudal").startsWith("Insuficiente");
         double velocity = Double.parseDouble(result.get("Velocidad interna").replace(" m/s", "").replace(',', '.'));
-        boolean heightDoesNotFit = result.get("Ajuste vertical").startsWith("No cabe");
+        boolean heightDoesNotFit = !result.get("Ajuste vertical").startsWith("Sumergido");
         boolean caution = flowInsufficient || velocity > 2.4 || heightDoesNotFit;
         String message = flowInsufficient
                 ? "CAUDAL INSUFICIENTE · Aumenta el caudal disponible o revisa las temperaturas objetivo."
                 : heightDoesNotFit
-                    ? "LA HÉLICE EXCEDE LA ALTURA ÚTIL INGRESADA."
+                    ? "LA HÉLICE NO QUEDA COMPLETAMENTE BAJO EL NIVEL DE CALDO ESTIMADO."
                     : velocity > 2.4
                         ? "VELOCIDAD INTERNA ALTA · Verifica presión real, erosión y cavitación; ΔP mostrado es de tubo recto."
                         : "EL CAUDAL DISPONIBLE CUBRE EL BALANCE DE ENERGÍA · Revisa las advertencias del modelo.";
         flowWarningText.setText(message);
         flowWarningText.setBackground(rounded(caution ? YELLOW : TEAL, 0, INK));
         flowWarningText.setVisibility(View.VISIBLE);
+        if (coilDiagram != null) coilDiagram.invalidate();
         resultRows.removeAllViews();
         for (Map.Entry<String, String> entry : result.entrySet()) {
             LinearLayout line = new LinearLayout(this);
