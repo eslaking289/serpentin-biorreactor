@@ -17,7 +17,12 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Build;
 import android.text.Editable;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
 import android.text.TextWatcher;
+import android.text.style.RelativeSizeSpan;
+import android.text.style.SubscriptSpan;
+import android.text.style.SuperscriptSpan;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -260,11 +265,43 @@ public class MainActivity extends Activity {
         TextView methodTitle = text("METODOLOGÍA", 20, INK, true);
         method.addView(methodTitle, margins(0, 0, 0, 5));
         method.addView(text("FUNDAMENTO TÉRMICO · CÁLCULO LOCAL", 10, MUTED, true), margins(0, 0, 0, 12));
-        addMethodBlock(method, "01 / BALANCE TÉRMICO TOTAL", "Q_met = q_met · V_caldo\nQ_diseño = Q_met + P_agitación − Q_pérdidas\nEn esta versión: Q_pérdidas = 0", YELLOW);
-        addMethodBlock(method, "02 / DIFERENCIA MEDIA LOGARÍTMICA", "ΔT₁ = T_caldo − T_salida\nΔT₂ = T_caldo − T_entrada\nΔT_lm = (ΔT₂ − ΔT₁) / ln(ΔT₂ / ΔT₁)", TEAL);
-        addMethodBlock(method, "03 / COEFICIENTE GLOBAL (U) HELICOIDAL", "ṁ_req = Q_diseño / [Cp (T_s − T_e)]\nv = 4ṁ / (ρπDᵢ²)    ·    Re = 4ṁ / (πDᵢμ)\nPr = μCp/k_f    ·    Nu = correlación según Re\nhᵢ = (Nu k_f/Dᵢ) · [1 + 3.5 Dᵢ/D_hélice]", MAGENTA);
-        addMethodBlock(method, "04 / RESISTENCIAS Y ÁREA EXTERIOR", "1/Uₒ = 1/hₒ + R_f + Dₒ ln(Dₒ/Dᵢ)/(2k_p)\n                  + Dₒ/(Dᵢhᵢ)\nAₒ = 1000 Q_diseño / (Uₒ ΔT_lm)\nL = Aₒ / (πDₒ)", TEAL);
-        addMethodBlock(method, "05 / GEOMETRÍA Y CAÍDA DE PRESIÓN", "Dᵢ = Dₒ − 2t_pared\nD_hélice = D_tanque − 2 holgura − Dₒ\nL_vuelta = √[(πD_hélice)² + paso²]\nN = L/L_vuelta    ·    H = N · paso\nΔP ≈ f_D (L/Dᵢ) (ρv²/2)", Color.BLACK);
+        addMethodBlock(method, "01 / BALANCE TÉRMICO TOTAL", YELLOW,
+                equationText("Q_met = q_met · V_caldo"),
+                equationText("Q_diseño = Q_met + P_agitación − Q_pérdidas"),
+                equationText("Modelo actual: Q_pérdidas = 0"));
+        addMethodBlock(method, "02 / DIFERENCIA MEDIA LOGARÍTMICA", TEAL,
+                equationText("ΔT₁ = T_caldo − T_salida"),
+                equationText("ΔT₂ = T_caldo − T_entrada"),
+                equationLine(equationText("ΔT_lm ="), fraction("ΔT₂ − ΔT₁", "ln(ΔT₂ / ΔT₁)")));
+        addMethodBlock(method, "03 / COEFICIENTE GLOBAL (U) HELICOIDAL", MAGENTA,
+                equationLine(equationText("ṁ_req ="), fraction("Q_diseño", "C_p · (T_s − T_e)")),
+                equationLine(equationText("v ="), fraction("4ṁ", "ρπD_i²")),
+                equationLine(equationText("Re ="), fraction("4ṁ", "πD_iμ")),
+                equationLine(equationText("Pr ="), fraction("μ · C_p · 1000", "k_f")),
+                equationText("Nu = 3.66, para Re < 2300"),
+                equationText("2300 ≤ Re < 3000: interpolación lineal hasta Nu_Gn(3000, Pr)"),
+                equationLine(equationText("w ="), fraction("Re − 2300", "700"), equationText("limitado entre 0 y 1")),
+                equationText("Nu_trans = (1 − w) · 3.66 + w · Nu_Gn(3000, Pr)"),
+                equationText("Nu_Gn ="),
+                equationLine(fraction("(f_D/8)(Re − 1000)Pr", "1 + 12.7√(f_D/8)[Pr^{2/3} − 1]")),
+                equationLine(equationText("De = Re√(D_i/D_hélice)")),
+                equationLine(equationText("C_h = 1 + w · 3.5 ·"), fraction("D_i", "D_hélice")),
+                equationLine(equationText("h_i ="), fraction("Nu · k_f", "D_i"), equationText("· C_h")));
+        addMethodBlock(method, "04 / RESISTENCIAS Y ÁREA EXTERIOR", TEAL,
+                equationLine(equationText("1/U_o ="), fraction("1", "h_o"), equationText("+ R_f +"), fraction("D_o ln(D_o/D_i)", "2 k_p")),
+                equationLine(equationText("+"), fraction("D_o", "D_i · h_i")),
+                equationLine(equationText("A_o ="), fraction("1000 · Q_diseño", "U_o · ΔT_lm")),
+                equationLine(equationText("L ="), fraction("A_o", "π · D_o")));
+        addMethodBlock(method, "05 / GEOMETRÍA Y CAÍDA DE PRESIÓN", Color.BLACK,
+                equationText("D_i = D_o − 2 t_pared"),
+                equationText("D_hélice + D_o + 2 holgura ≤ D_tanque"),
+                equationText("L_vuelta = √[(π · D_hélice)² + paso²]"),
+                equationLine(equationText("N ="), fraction("L", "L_vuelta"), equationText("· H = N · paso")),
+                equationText("Ajuste vertical: H + D_o ≤ H_tanque"),
+                equationLine(equationText("ΔP ≈ f_D ·"), fraction("L", "D_i"), equationText("·"), fraction("ρ · v²", "2")),
+                equationLine(equationText("f_D ="), fraction("64", "Re"), equationText("si Re ≤ 2300")),
+                equationText("2300 < Re < 4000: interpolación lineal de f_D"),
+                equationText("f_D = [0.79 ln(Re) − 1.64]^{−2}, si Re ≥ 4000"));
         LinearLayout assumptions = card();
         TextView assumptionsTitle = text("SUPUESTOS Y LÍMITES", 16, INK, true);
         assumptionsTitle.setBackground(rounded(MAGENTA, 0, INK));
@@ -273,7 +310,10 @@ public class MainActivity extends Activity {
         addAssumptionRow(assumptions, "Caldo perfectamente mezclado a temperatura uniforme; sin gradientes térmicos.", TEAL);
         addAssumptionRow(assumptions, "q_met se ingresa desde datos o balance, en kW/m³; no lo predice esta app.", YELLOW);
         addAssumptionRow(assumptions, "Pérdidas de calor al ambiente omitidas: Q_pérdidas = 0.", MAGENTA);
-        addAssumptionRow(assumptions, "Nu helicoidal simplificado; en laminar no corrige el número de Dean.", TEAL);
+        addAssumptionRow(assumptions, "Gnielinski orientativa para 3,000 ≤ Re ≤ 5×10⁶ y 0.5 ≤ Pr ≤ 2,000.", TEAL);
+        addAssumptionRow(assumptions, "Nu laminar = 3.66 para tubo recto desarrollado y pared a temperatura constante; no corrige Dean.", MAGENTA);
+        addAssumptionRow(assumptions, "La mejora helicoidal de Nu es una aproximación, no una validación experimental.", TEAL);
+        addAssumptionRow(assumptions, "μ se convierte de mPa·s a Pa·s; Cp de kJ/(kg·K) a J/(kg·K) para Pr.", YELLOW);
         addAssumptionRow(assumptions, "ΔP de tubo recto equivalente; no incluye curvatura ni pérdidas locales.", YELLOW);
         addAssumptionRow(assumptions, "Estimación preliminar: verificar propiedades, bomba y diseño mecánico por separado.", MAGENTA);
         methodologyScreen.addView(assumptions, margins(0, 0, 0, 14));
@@ -302,7 +342,7 @@ public class MainActivity extends Activity {
         setContentView(root);
     }
 
-    private void addMethodBlock(LinearLayout parent, String title, String equation, int accent) {
+    private void addMethodBlock(LinearLayout parent, String title, int accent, View... equations) {
         LinearLayout block = new LinearLayout(this);
         block.setOrientation(LinearLayout.VERTICAL);
         block.setPadding(dp(10), dp(8), dp(10), dp(8));
@@ -311,13 +351,88 @@ public class MainActivity extends Activity {
         heading.setBackground(rounded(accent, 0, INK));
         heading.setPadding(dp(8), dp(6), dp(8), dp(6));
         block.addView(heading);
-        TextView formula = text(equation, 12, INK, true);
-        formula.setTypeface(monoTypeface);
-        formula.setLineSpacing(dp(3), 1f);
-        formula.setPadding(dp(8), dp(8), dp(8), dp(8));
-        formula.setBackground(rounded(BG, 0, INK));
-        block.addView(formula, margins(0, 5, 0, 0));
+        LinearLayout equationPanel = new LinearLayout(this);
+        equationPanel.setOrientation(LinearLayout.VERTICAL);
+        equationPanel.setPadding(dp(5), dp(6), dp(5), dp(6));
+        equationPanel.setBackground(rounded(BG, 0, INK));
+        for (View equation : equations) equationPanel.addView(equation, new LinearLayout.LayoutParams(-1, -2));
+        block.addView(equationPanel, margins(0, 5, 0, 0));
         parent.addView(block, margins(0, 0, 0, 8));
+    }
+
+    private TextView equationText(String source) {
+        TextView view = text("", 13, INK, false);
+        view.setText(mathText(source));
+        view.setTypeface(Typeface.create("serif", Typeface.NORMAL));
+        view.setGravity(Gravity.CENTER);
+        view.setIncludeFontPadding(true);
+        view.setPadding(dp(2), dp(4), dp(2), dp(4));
+        return view;
+    }
+
+    private LinearLayout equationLine(View... parts) {
+        LinearLayout line = new LinearLayout(this);
+        line.setOrientation(LinearLayout.HORIZONTAL);
+        line.setGravity(Gravity.CENTER);
+        line.setPadding(0, dp(2), 0, dp(2));
+        for (View part : parts) {
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(-2, -2);
+            params.setMargins(dp(2), 0, dp(2), 0);
+            line.addView(part, params);
+        }
+        return line;
+    }
+
+    private LinearLayout fraction(String numerator, String denominator) {
+        LinearLayout fraction = new LinearLayout(this);
+        fraction.setOrientation(LinearLayout.VERTICAL);
+        fraction.setGravity(Gravity.CENTER);
+        TextView top = equationText(numerator);
+        TextView bottom = equationText(denominator);
+        top.setTextSize(12);
+        bottom.setTextSize(12);
+        fraction.addView(top, new LinearLayout.LayoutParams(-2, -2));
+        View bar = new View(this);
+        bar.setBackgroundColor(INK);
+        top.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        bottom.measure(View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED), View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED));
+        int fractionWidth = Math.max(dp(30), Math.max(top.getMeasuredWidth(), bottom.getMeasuredWidth()));
+        fraction.addView(bar, new LinearLayout.LayoutParams(dp(fractionWidth), dp(1)));
+        fraction.addView(bottom, new LinearLayout.LayoutParams(-2, -2));
+        return fraction;
+    }
+
+    private CharSequence mathText(String source) {
+        SpannableStringBuilder result = new SpannableStringBuilder();
+        for (int i = 0; i < source.length();) {
+            char current = source.charAt(i);
+            if (current == '_' || current == '^') {
+                boolean subscript = current == '_';
+                int start = ++i;
+                int end;
+                if (i < source.length() && source.charAt(i) == '{') {
+                    start = ++i;
+                    end = source.indexOf('}', i);
+                    if (end < 0) end = source.length();
+                    i = Math.min(source.length(), end + 1);
+                } else {
+                    while (i < source.length() && (Character.isLetterOrDigit(source.charAt(i)) || source.charAt(i) == '−')) i++;
+                    end = i;
+                }
+                if (end <= start) {
+                    result.append(current);
+                    continue;
+                }
+                int spanStart = result.length();
+                result.append(source, start, end);
+                result.setSpan(subscript ? new SubscriptSpan() : new SuperscriptSpan(), spanStart, result.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                result.setSpan(new RelativeSizeSpan(0.72f), spanStart, result.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            } else {
+                result.append(current);
+                i++;
+            }
+        }
+        return result;
     }
 
     private void addAssumptionRow(LinearLayout parent, String copy, int accent) {
@@ -329,7 +444,8 @@ public class MainActivity extends Activity {
         mark.setGravity(Gravity.CENTER);
         mark.setBackground(rounded(accent, 0, INK));
         row.addView(mark, new LinearLayout.LayoutParams(dp(27), dp(27)));
-        TextView label = text(copy, 11, INK, false);
+        TextView label = text("", 11, INK, false);
+        label.setText(mathText(copy));
         label.setPadding(dp(8), 0, 0, 0);
         row.addView(label, new LinearLayout.LayoutParams(0, -2, 1));
         parent.addView(row, margins(0, 0, 0, 6));
