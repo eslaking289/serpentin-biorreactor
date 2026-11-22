@@ -1,6 +1,6 @@
 # Módulo interactivo de biorreactor Android
 
-El módulo se abre desde la tarjeta **Biorreactor en corte** de la pantalla **Resultados**. Está incluido en `android/app/src/main/assets/bioreactor/` y se carga en una `WebView` local con las solicitudes de red bloqueadas. Su interfaz usa los colores y la tipografía de ThermaBio. No depende del sitio GitHub Pages, servicios web, bibliotecas descargadas ni permiso de Internet. Al abrirlo, recibe los valores actualmente editados en la calculadora.
+El módulo se despliega dentro de la tarjeta **Biorreactor en corte** en la pantalla **Resultados**; no abre otra pantalla. Está incluido en `android/app/src/main/assets/bioreactor/` y se carga en una `WebView` local expandida a la altura del contenido, con las solicitudes de red bloqueadas. Su interfaz usa los colores y la tipografía de ThermaBio. No depende del sitio GitHub Pages, servicios web, bibliotecas descargadas ni permiso de Internet. Al abrirlo, recibe los valores actualmente editados en la calculadora.
 
 ## Funciones
 

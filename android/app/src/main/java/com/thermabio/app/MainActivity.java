@@ -26,6 +26,12 @@ import android.text.style.SubscriptSpan;
 import android.text.style.SuperscriptSpan;
 import android.view.Gravity;
 import android.view.View;
+import android.webkit.JavascriptInterface;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
+import android.annotation.SuppressLint;
 import android.widget.FrameLayout;
 import android.view.inputmethod.InputMethodManager;
 import android.content.Context;
@@ -35,6 +41,8 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
@@ -78,6 +86,9 @@ public class MainActivity extends Activity {
     private final int[] navigationAccents = {TEAL, YELLOW, MAGENTA};
     private TextView statusText;
     private CoilDiagramView coilDiagram;
+    private WebView bioreactorWebView;
+    private Button bioreactorToggle;
+    private boolean bioreactorWebViewLoaded;
     private ScrollView scrollView;
     private FrameLayout root;
     private LinearLayout calculatorScreen;
@@ -482,21 +493,93 @@ public class MainActivity extends Activity {
         TextView copy = text("Inspecciona el recipiente, la agitación, la instrumentación y el recorrido del refrigerante. Ajusta parámetros y revisa el dimensionamiento desde esta sección de resultados.", 12, MUTED, false);
         copy.setLineSpacing(dp(2), 1f);
         module.addView(copy, margins(0, 0, 0, 10));
-        Button open = smallButton("ABRIR MODELO INTERACTIVO  →");
-        open.setBackground(projected(TEAL));
-        open.setOnClickListener(v -> openBioreactorModule());
-        module.addView(open);
+        bioreactorToggle = smallButton("DESPLEGAR MODELO INTERACTIVO  ↓");
+        bioreactorToggle.setBackground(projected(TEAL));
+        bioreactorToggle.setOnClickListener(v -> toggleBioreactorModule());
+        module.addView(bioreactorToggle);
+
+        bioreactorWebView = new WebView(this);
+        bioreactorWebView.setVisibility(View.GONE);
+        bioreactorWebView.setBackgroundColor(Color.TRANSPARENT);
+        bioreactorWebView.setVerticalScrollBarEnabled(false);
+        bioreactorWebView.setHorizontalScrollBarEnabled(false);
+        bioreactorWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        bioreactorWebView.getSettings().setJavaScriptEnabled(true);
+        bioreactorWebView.getSettings().setAllowFileAccess(true);
+        bioreactorWebView.getSettings().setAllowFileAccessFromFileURLs(false);
+        bioreactorWebView.getSettings().setAllowUniversalAccessFromFileURLs(false);
+        bioreactorWebView.getSettings().setAllowContentAccess(false);
+        bioreactorWebView.getSettings().setBlockNetworkLoads(true);
+        bioreactorWebView.addJavascriptInterface(new BioreactorInlineBridge(), "ThermaBioAndroid");
+        bioreactorWebView.setWebChromeClient(new WebChromeClient());
+        bioreactorWebView.setWebViewClient(new WebViewClient() {
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                return !"file".equalsIgnoreCase(request.getUrl().getScheme());
+            }
+            @Override public void onPageFinished(WebView view, String url) {
+                bioreactorWebViewLoaded = true;
+                view.evaluateJavascript("document.documentElement.classList.add('embedded');window.ThermaBio.setInputs(" + currentValuesJson() + ");ThermaBioAndroid.reportContentHeight(document.documentElement.scrollHeight);", null);
+            }
+        });
+        LinearLayout.LayoutParams webParams = new LinearLayout.LayoutParams(-1, dp(720));
+        webParams.topMargin = dp(12);
+        module.addView(bioreactorWebView, webParams);
         parent.addView(module, margins(0, 0, 0, 14));
     }
 
-    private void openBioreactorModule() {
+    private void toggleBioreactorModule() {
         if (values.size() != specs.size()) {
-            Toast.makeText(this, "Corrige o completa los parámetros para abrir el modelo del biorreactor.", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Corrige o completa los parámetros para mostrar el modelo del biorreactor.", Toast.LENGTH_LONG).show();
             return;
         }
-        Intent intent = new Intent(this, BioreactorActivity.class);
-        for (Map.Entry<String, Double> entry : values.entrySet()) intent.putExtra(entry.getKey(), entry.getValue());
-        startActivity(intent);
+        if (bioreactorWebView.getVisibility() == View.VISIBLE) {
+            bioreactorWebView.setVisibility(View.GONE);
+            bioreactorToggle.setText("DESPLEGAR MODELO INTERACTIVO  ↓");
+            return;
+        }
+        bioreactorWebView.setVisibility(View.VISIBLE);
+        bioreactorToggle.setText("OCULTAR MODELO INTERACTIVO  ↑");
+        if (!bioreactorWebViewLoaded) {
+            bioreactorWebView.loadUrl("file:///android_asset/bioreactor/index.html?embed=1");
+        } else {
+            bioreactorWebView.evaluateJavascript("window.ThermaBio.setInputs(" + currentValuesJson() + ");", null);
+        }
+    }
+
+    private String currentValuesJson() {
+        JSONObject data = new JSONObject();
+        try {
+            for (Map.Entry<String, Double> entry : values.entrySet()) data.put(entry.getKey(), entry.getValue());
+        } catch (JSONException ignored) { }
+        return data.toString();
+    }
+
+    private final class BioreactorInlineBridge {
+        @JavascriptInterface public String getInitialData() { return currentValuesJson(); }
+
+        @JavascriptInterface public void reportContentHeight(int cssHeight) {
+            runOnUiThread(() -> {
+                if (bioreactorWebView == null || bioreactorWebView.getLayoutParams() == null) return;
+                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) bioreactorWebView.getLayoutParams();
+                params.height = Math.max(dp(720), Math.min(dp(12000), dp(cssHeight)));
+                bioreactorWebView.setLayoutParams(params);
+            });
+        }
+
+        @JavascriptInterface public void closeModule() {
+            runOnUiThread(() -> {
+                if (bioreactorWebView != null) bioreactorWebView.setVisibility(View.GONE);
+                if (bioreactorToggle != null) bioreactorToggle.setText("DESPLEGAR MODELO INTERACTIVO  ↓");
+            });
+        }
+    }
+
+    @Override protected void onDestroy() {
+        if (bioreactorWebView != null) {
+            bioreactorWebView.removeJavascriptInterface("ThermaBioAndroid");
+            bioreactorWebView.destroy();
+        }
+        super.onDestroy();
     }
 
     private LinearLayout newScreen() {
