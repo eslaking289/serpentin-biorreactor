@@ -261,6 +261,7 @@ public class MainActivity extends Activity {
         Button editAgain = smallButton("Editar parámetros");
         editAgain.setOnClickListener(v -> showScreen(0));
         output.addView(editAgain, margins(0, 10, 0, 0));
+        addBioreactorResultsCard(resultsScreen);
 
         addScreenHeader(methodologyScreen, "METODOLOGÍA Y ECUACIONES", "BASES Y CRITERIOS DE DIMENSIONAMIENTO");
         LinearLayout method = card();
@@ -469,6 +470,33 @@ public class MainActivity extends Activity {
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -1, 1f);
         params.setMargins(dp(3), 0, dp(3), 0);
         parent.addView(button, params);
+    }
+
+    private void addBioreactorResultsCard(LinearLayout parent) {
+        LinearLayout module = card();
+        TextView tag = text("VISTA INTERACTIVA  /  EQUIPO Y SERPENTÍN", 10, INK, true);
+        tag.setBackground(rounded(TEAL, 0, INK));
+        tag.setPadding(dp(8), dp(6), dp(8), dp(6));
+        module.addView(tag, margins(0, 0, 0, 8));
+        module.addView(text("BIORREACTOR EN CORTE", 19, INK, true), margins(0, 0, 0, 5));
+        TextView copy = text("Inspecciona el recipiente, la agitación, la instrumentación y el recorrido del refrigerante. Ajusta parámetros y revisa el dimensionamiento desde esta sección de resultados.", 12, MUTED, false);
+        copy.setLineSpacing(dp(2), 1f);
+        module.addView(copy, margins(0, 0, 0, 10));
+        Button open = smallButton("ABRIR MODELO INTERACTIVO  →");
+        open.setBackground(projected(TEAL));
+        open.setOnClickListener(v -> openBioreactorModule());
+        module.addView(open);
+        parent.addView(module, margins(0, 0, 0, 14));
+    }
+
+    private void openBioreactorModule() {
+        if (values.size() != specs.size()) {
+            Toast.makeText(this, "Corrige o completa los parámetros para abrir el modelo del biorreactor.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        Intent intent = new Intent(this, BioreactorActivity.class);
+        for (Map.Entry<String, Double> entry : values.entrySet()) intent.putExtra(entry.getKey(), entry.getValue());
+        startActivity(intent);
     }
 
     private LinearLayout newScreen() {

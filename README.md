@@ -4,7 +4,9 @@ Aplicación local para estimar la carga térmica de una fermentación aeróbica 
 
 **Aplicación web:** [Abrir ThermaBio](https://eslaking289.github.io/serpentin-biorreactor/)
 
-**APK nativa para Android:** descarga [ThermaBio para Android](https://github.com/eslaking289/serpentin-biorreactor/releases/download/apk-v1.4.2/ThermaBio-Android.apk). Esta aplicación está hecha en Java nativo, no abre ni necesita el sitio web, y no solicita permiso de internet.
+**APK nativa para Android:** descarga [ThermaBio para Android 1.5.0](https://github.com/eslaking289/serpentin-biorreactor/raw/refs/heads/main/android/dist/ThermaBio-Android-1.5.0.apk). La aplicación no solicita permiso de Internet.
+
+La pantalla **Resultados** contiene una tarjeta para abrir el modelo interactivo y local del biorreactor. El módulo usa recursos incluidos en el APK, y el modelo, los supuestos y sus límites están documentados en [`android/BIORREACTOR.md`](android/BIORREACTOR.md).
 
 ## Inicio rápido
 
