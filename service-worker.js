@@ -1,6 +1,6 @@
-const CACHE_NAME = 'thermabio-v3';
+const CACHE_NAME = 'thermabio-v4';
 const APP_FILES = [
-  './', './index.html', './metodologia.html', './styles.css', './core.js', './app.js',
+  './', './index.html', './despejes.html', './despejes-core.js', './metodologia.html', './styles.css', './core.js', './app.js',
   './manifest.webmanifest'
 ];
 const OPTIONAL_FILES = ['./icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png'];

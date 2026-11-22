@@ -6,6 +6,14 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { design, lmtd, nusselt, darcy } = require('../core.js');
+const { solve } = require('../despejes-core.js');
+for (const file of ['despejes.html', 'despejes-core.js']) {
+  assert.equal(
+    fs.readFileSync(path.join(__dirname, '..', file), 'utf8'),
+    fs.readFileSync(path.join(__dirname, '..', 'android', 'app', 'src', 'main', 'assets', file), 'utf8'),
+    `${file}: la versión web y Android deben usar el mismo archivo`
+  );
+}
 
 const defaults = {
   dh: 460, substrateRate: 50, agitation: 1.2, heatFactor: 1,
@@ -44,6 +52,23 @@ assert.equal(base.errors, undefined);
 for (const [key, expected] of Object.entries(reference)) close(base[key], expected, key);
 assert.equal(base.regime, 'turbulento');
 assert.equal(base.correlationValid, true);
+
+// Despejes independientes, con valores de referencia calculados desde las ecuaciones mostradas.
+function solveValue(target, values) { return solve(target, values).value; }
+close(solveValue('duty', { dh: 460, rate: 50, factor: 1, agitation: 1.2 }), 7.5888888888888895, 'despeje Q');
+close(solveValue('dutyVol', { qMet: 38, volume: 1.2, agitation: 2.9 }), 48.5, 'despeje Q base volumétrica');
+close(solveValue('flow', { q: 8, cp: 4180, tin: 10, tout: 18 }), 0.23923444976076555, 'despeje caudal');
+close(solveValue('lmtd', { tb: 30, tin: 10, tout: 18 }), 15.660921511769747, 'despeje LMTD');
+close(solveValue('lmtd', { tb: 22, tin: 10, tout: 10 }), 12, 'despeje LMTD con diferencias iguales');
+close(solveValue('u', { q: 8, area: 2, tb: 30, tin: 10, tout: 18 }), 255.41281188299527, 'despeje U');
+close(solveValue('area', { q: 8, u: 700, tb: 30, tin: 10, tout: 18 }), 0.7297508910942722, 'despeje área');
+close(solveValue('length', { area: 2, do: 25.4 }), 25.06377056565281, 'despeje longitud');
+close(solveValue('turns', { length: 30, dh: 550, pitch: 50, do: 25.4 }), 17.35509267377625, 'despeje vueltas');
+close(solveValue('height', { turns: 18, pitch: 50 }), 0.9, 'despeje altura');
+close(solveValue('pressure', { mass: 0.25, length: 30, rho: 999, mu: 1.17, do: 25.4, wall: 1.65 }), 8.577330504100097, 'despeje ΔP');
+assert.equal(solveValue('pressure', { mass: 0, length: 30, rho: 999, mu: 1.17, do: 25.4, wall: 1.65 }), 0);
+assert.throws(() => solve('lmtd', { tb: 20, tin: 10, tout: 22 }), /T_caldo/);
+assert.throws(() => solve('pressure', { mass: 0.2, length: 30, rho: 999, mu: 1.17, do: 20, wall: 10 }), /diámetro interior/);
 
 // LMTD: igualdad exacta y casi igual sin cancelación numérica.
 close(lmtd(12, 12), 12, 'LMTD igual');
@@ -215,7 +240,7 @@ installPromise.then(async () => {
   let activatePromise;
   listeners.get('activate')({ waitUntil(promise) { activatePromise = promise; } });
   await activatePromise;
-  assert.deepEqual(deleted, ['thermabio-v2']);
+  assert.deepEqual(deleted, ['thermabio-v2', 'thermabio-v3']);
   assert.equal(claimed, true);
   offline = true;
   let offlineResponsePromise;
@@ -224,7 +249,7 @@ installPromise.then(async () => {
     respondWith(promise) { offlineResponsePromise = promise; }
   });
   assert.equal(await (await offlineResponsePromise).text(), 'cached app shell');
-  console.log('Verificación completa: caso independiente, fronteras, casos inválidos y shell offline.');
+  console.log('Verificación completa: despejes, caso independiente, fronteras, casos inválidos y shell offline.');
 }).catch(error => {
   console.error(error);
   process.exitCode = 1;

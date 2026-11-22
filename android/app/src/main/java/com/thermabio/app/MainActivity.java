@@ -89,6 +89,9 @@ public class MainActivity extends Activity {
     private WebView bioreactorWebView;
     private Button bioreactorToggle;
     private boolean bioreactorWebViewLoaded;
+    private WebView calculationWebView;
+    private Button calculationToggle;
+    private boolean calculationWebViewLoaded;
     private ScrollView scrollView;
     private FrameLayout root;
     private LinearLayout calculatorScreen;
@@ -272,6 +275,7 @@ public class MainActivity extends Activity {
         Button editAgain = smallButton("Editar parámetros");
         editAgain.setOnClickListener(v -> showScreen(0));
         output.addView(editAgain, margins(0, 10, 0, 0));
+        addCalculationToolsCard(resultsScreen);
         addBioreactorResultsCard(resultsScreen);
 
         addScreenHeader(methodologyScreen, "METODOLOGÍA Y ECUACIONES", "BASES Y CRITERIOS DE DIMENSIONAMIENTO");
@@ -527,6 +531,72 @@ public class MainActivity extends Activity {
         parent.addView(module, margins(0, 0, 0, 14));
     }
 
+    private void addCalculationToolsCard(LinearLayout parent) {
+        LinearLayout module = card();
+        TextView tag = text("DESPEJES  /  CÁLCULO POR VARIABLE", 10, INK, true);
+        tag.setBackground(rounded(TEAL, 0, INK));
+        tag.setPadding(dp(8), dp(6), dp(8), dp(6));
+        module.addView(tag, margins(0, 0, 0, 8));
+        module.addView(text("CALCULA CADA VARIABLE", 19, INK, true), margins(0, 0, 0, 5));
+        TextView copy = text("Elige el resultado que buscas y agrega los datos conocidos de esa ecuación. El cálculo se actualiza al escribir.", 12, MUTED, false);
+        copy.setLineSpacing(dp(2), 1f);
+        module.addView(copy, margins(0, 0, 0, 10));
+        calculationToggle = smallButton("ABRIR CALCULADORA DE DESPEJES  ↓");
+        calculationToggle.setBackground(projected(TEAL));
+        calculationToggle.setOnClickListener(v -> toggleCalculationTools());
+        module.addView(calculationToggle);
+
+        calculationWebView = new WebView(this);
+        calculationWebView.setVisibility(View.GONE);
+        calculationWebView.setBackgroundColor(Color.TRANSPARENT);
+        calculationWebView.setVerticalScrollBarEnabled(false);
+        calculationWebView.setHorizontalScrollBarEnabled(false);
+        calculationWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        calculationWebView.getSettings().setJavaScriptEnabled(true);
+        calculationWebView.getSettings().setAllowFileAccess(true);
+        calculationWebView.getSettings().setAllowFileAccessFromFileURLs(false);
+        calculationWebView.getSettings().setAllowUniversalAccessFromFileURLs(false);
+        calculationWebView.getSettings().setAllowContentAccess(false);
+        calculationWebView.getSettings().setBlockNetworkLoads(true);
+        calculationWebView.addJavascriptInterface(new CalculationToolBridge(), "ThermaBioAndroid");
+        calculationWebView.setWebChromeClient(new WebChromeClient());
+        calculationWebView.setWebViewClient(new WebViewClient() {
+            @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                return !"file".equalsIgnoreCase(request.getUrl().getScheme());
+            }
+            @Override public void onPageFinished(WebView view, String url) {
+                calculationWebViewLoaded = true;
+                view.evaluateJavascript("document.documentElement.classList.add('embedded');ThermaBioAndroid.reportContentHeight(document.documentElement.scrollHeight);", null);
+            }
+        });
+        LinearLayout.LayoutParams webParams = new LinearLayout.LayoutParams(-1, dp(720));
+        webParams.topMargin = dp(12);
+        module.addView(calculationWebView, webParams);
+        parent.addView(module, margins(0, 0, 0, 14));
+    }
+
+    private void toggleCalculationTools() {
+        if (calculationWebView.getVisibility() == View.VISIBLE) {
+            calculationWebView.setVisibility(View.GONE);
+            calculationToggle.setText("ABRIR CALCULADORA DE DESPEJES  ↓");
+            return;
+        }
+        calculationWebView.setVisibility(View.VISIBLE);
+        calculationToggle.setText("OCULTAR CALCULADORA DE DESPEJES  ↑");
+        if (!calculationWebViewLoaded) calculationWebView.loadUrl("file:///android_asset/despejes.html?embed=1");
+    }
+
+    private final class CalculationToolBridge {
+        @JavascriptInterface public void reportContentHeight(int cssHeight) {
+            runOnUiThread(() -> {
+                if (calculationWebView == null || calculationWebView.getLayoutParams() == null) return;
+                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) calculationWebView.getLayoutParams();
+                params.height = Math.max(dp(650), Math.min(dp(5000), dp(cssHeight)));
+                calculationWebView.setLayoutParams(params);
+            });
+        }
+    }
+
     private void toggleBioreactorModule() {
         if (values.size() != specs.size()) {
             Toast.makeText(this, "Corrige o completa los parámetros para mostrar el modelo del biorreactor.", Toast.LENGTH_LONG).show();
@@ -578,6 +648,10 @@ public class MainActivity extends Activity {
         if (bioreactorWebView != null) {
             bioreactorWebView.removeJavascriptInterface("ThermaBioAndroid");
             bioreactorWebView.destroy();
+        }
+        if (calculationWebView != null) {
+            calculationWebView.removeJavascriptInterface("ThermaBioAndroid");
+            calculationWebView.destroy();
         }
         super.onDestroy();
     }

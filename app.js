@@ -24,6 +24,12 @@
   });
   window.addEventListener('appinstalled', () => { if (installButton) installButton.hidden = true; });
   const $ = id => document.getElementById(id);
+  const calculationFrame = $('calculationFrame');
+  window.addEventListener('message', event => {
+    if (!calculationFrame || event.source !== calculationFrame.contentWindow || event.data?.type !== 'thermabio-calculator-height') return;
+    const height = Number(event.data.height);
+    if (Number.isFinite(height)) calculationFrame.style.height = `${Math.max(500, Math.min(7000, height))}px`;
+  });
   const inputs = ['dh','substrateRate','agitation','heatFactor','tBroth','tIn','tOut','coolantFlow','cp','rho','mu','kf','hBroth','wallK','wallT','fouling','tubeD','tankD','clearance','pitch'];
   const defaults = Object.fromEntries(inputs.map(id => [id, $(id).value]));
   let latest = null, timer;
