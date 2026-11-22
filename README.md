@@ -4,11 +4,11 @@ Aplicación local para estimar la carga térmica de una fermentación aeróbica 
 
 **Aplicación web:** [Abrir ThermaBio](https://eslaking289.github.io/serpentin-biorreactor/)
 
-**APK nativa para Android:** descarga [ThermaBio para Android 1.5.2](https://github.com/eslaking289/serpentin-biorreactor/raw/refs/heads/main/android/dist/ThermaBio-Android-1.5.2.apk). La aplicación no solicita permiso de Internet.
+**APK nativa para Android:** descarga [ThermaBio para Android 1.5.3](https://github.com/eslaking289/serpentin-biorreactor/raw/refs/heads/main/android/dist/ThermaBio-Android-1.5.3.apk). La aplicación no solicita permiso de Internet.
 
 La pantalla **Resultados** contiene una tarjeta que despliega el modelo interactivo del biorreactor dentro de la misma pantalla. El módulo usa recursos incluidos en el APK, y el modelo, los supuestos y sus límites están documentados en [`android/BIORREACTOR.md`](android/BIORREACTOR.md).
 
-La sección **Calcula cada variable** permite despejar la carga térmica (por base molar o volumétrica), el caudal de refrigerante, ΔT logarítmica, U requerido, área, longitud, vueltas, altura y caída de presión usando los datos conocidos de cada ecuación. También está disponible en la pantalla **Resultados** de Android.
+La sección **Balance metabólico** permite calcular la carga térmica total, el calor metabólico específico, el volumen de caldo o la potencia de agitación conociendo las otras tres variables. En Android, el resultado calculado para calor metabólico, volumen o agitación se puede aplicar directamente a la calculadora principal.
 
 ## Inicio rápido
 
@@ -87,7 +87,7 @@ Las referencias respaldan correlaciones generales, no validan automáticamente c
 - `index.html`: estructura de la interfaz.
 - `styles.css`: presentación adaptable a escritorio y móvil.
 - `core.js`: motor de cálculo.
-- `despejes.html` y `despejes-core.js`: calculadora por variable, también integrada en Resultados.
+- `balance-metabolico.html` y `balance-metabolico-core.js`: despejes del balance metabólico, también integrados en Resultados Android.
 - `app.js`: validación, interfaz y exportación CSV.
 - `MEMORIA.md`: alcance, decisiones, registro de apoyo con IA y pendientes de verificación del equipo.
 - `manifest.webmanifest`: configuración de instalación como aplicación.

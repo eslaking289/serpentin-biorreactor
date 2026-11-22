@@ -1,6 +1,6 @@
 # Módulo interactivo de biorreactor Android
 
-En la pantalla **Resultados** también está disponible **Calcula cada variable**. El módulo `despejes.html`, incluido en los assets del APK, permite resolver carga térmica (con la base volumétrica de la APK o la base molar de la web), caudal másico requerido, ΔT logarítmica, U requerido, área exterior, longitud, vueltas, altura y caída de presión por separado. Cada opción muestra su ecuación, unidades y validaciones; los datos se ingresan en la unidad que muestra cada campo. La caída de presión se identifica como estimación de Darcy–Weisbach para tubo recto equivalente.
+En la pantalla **Resultados** también está disponible **Balance metabólico**. Permite despejar carga térmica total, calor metabólico específico, volumen de caldo o potencia de agitación a partir de las otras tres variables mediante `Q̇_total = q̇_met · V_caldo + P_agitación`. El valor de calor metabólico, volumen o agitación se puede aplicar a los campos correspondientes de la calculadora principal.
 
 El módulo se despliega dentro de la tarjeta **Biorreactor en corte** en la pantalla **Resultados**; no abre otra pantalla. Está incluido en `android/app/src/main/assets/bioreactor/` y se carga en una `WebView` local expandida a la altura del contenido, con las solicitudes de red bloqueadas. Su interfaz usa los colores y la tipografía de ThermaBio. No depende del sitio GitHub Pages, servicios web, bibliotecas descargadas ni permiso de Internet. Al abrirlo, recibe los valores actualmente editados en la calculadora.
 

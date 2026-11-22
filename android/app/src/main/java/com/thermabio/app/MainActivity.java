@@ -89,9 +89,9 @@ public class MainActivity extends Activity {
     private WebView bioreactorWebView;
     private Button bioreactorToggle;
     private boolean bioreactorWebViewLoaded;
-    private WebView calculationWebView;
-    private Button calculationToggle;
-    private boolean calculationWebViewLoaded;
+    private WebView metabolicBalanceWebView;
+    private Button metabolicBalanceToggle;
+    private boolean metabolicBalanceWebViewLoaded;
     private ScrollView scrollView;
     private FrameLayout root;
     private LinearLayout calculatorScreen;
@@ -275,7 +275,7 @@ public class MainActivity extends Activity {
         Button editAgain = smallButton("Editar parámetros");
         editAgain.setOnClickListener(v -> showScreen(0));
         output.addView(editAgain, margins(0, 10, 0, 0));
-        addCalculationToolsCard(resultsScreen);
+        addMetabolicBalanceCard(resultsScreen);
         addBioreactorResultsCard(resultsScreen);
 
         addScreenHeader(methodologyScreen, "METODOLOGÍA Y ECUACIONES", "BASES Y CRITERIOS DE DIMENSIONAMIENTO");
@@ -531,68 +531,77 @@ public class MainActivity extends Activity {
         parent.addView(module, margins(0, 0, 0, 14));
     }
 
-    private void addCalculationToolsCard(LinearLayout parent) {
+    private void addMetabolicBalanceCard(LinearLayout parent) {
         LinearLayout module = card();
-        TextView tag = text("DESPEJES  /  CÁLCULO POR VARIABLE", 10, INK, true);
+        TextView tag = text("BALANCE METABÓLICO  /  DESPEJE DE ENTRADAS", 10, INK, true);
         tag.setBackground(rounded(TEAL, 0, INK));
         tag.setPadding(dp(8), dp(6), dp(8), dp(6));
         module.addView(tag, margins(0, 0, 0, 8));
-        module.addView(text("CALCULA CADA VARIABLE", 19, INK, true), margins(0, 0, 0, 5));
-        TextView copy = text("Elige el resultado que buscas y agrega los datos conocidos de esa ecuación. El cálculo se actualiza al escribir.", 12, MUTED, false);
+        module.addView(text("CALCULA LA ENTRADA QUE TE FALTA", 19, INK, true), margins(0, 0, 0, 5));
+        TextView copy = text("Despeja la carga térmica, el calor metabólico específico, el volumen de caldo o la potencia de agitación a partir del balance.", 12, MUTED, false);
         copy.setLineSpacing(dp(2), 1f);
         module.addView(copy, margins(0, 0, 0, 10));
-        calculationToggle = smallButton("ABRIR CALCULADORA DE DESPEJES  ↓");
-        calculationToggle.setBackground(projected(TEAL));
-        calculationToggle.setOnClickListener(v -> toggleCalculationTools());
-        module.addView(calculationToggle);
+        metabolicBalanceToggle = smallButton("ABRIR BALANCE METABÓLICO  ↓");
+        metabolicBalanceToggle.setBackground(projected(TEAL));
+        metabolicBalanceToggle.setOnClickListener(v -> toggleMetabolicBalance());
+        module.addView(metabolicBalanceToggle);
 
-        calculationWebView = new WebView(this);
-        calculationWebView.setVisibility(View.GONE);
-        calculationWebView.setBackgroundColor(Color.TRANSPARENT);
-        calculationWebView.setVerticalScrollBarEnabled(false);
-        calculationWebView.setHorizontalScrollBarEnabled(false);
-        calculationWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        calculationWebView.getSettings().setJavaScriptEnabled(true);
-        calculationWebView.getSettings().setAllowFileAccess(true);
-        calculationWebView.getSettings().setAllowFileAccessFromFileURLs(false);
-        calculationWebView.getSettings().setAllowUniversalAccessFromFileURLs(false);
-        calculationWebView.getSettings().setAllowContentAccess(false);
-        calculationWebView.getSettings().setBlockNetworkLoads(true);
-        calculationWebView.addJavascriptInterface(new CalculationToolBridge(), "ThermaBioAndroid");
-        calculationWebView.setWebChromeClient(new WebChromeClient());
-        calculationWebView.setWebViewClient(new WebViewClient() {
+        metabolicBalanceWebView = new WebView(this);
+        metabolicBalanceWebView.setVisibility(View.GONE);
+        metabolicBalanceWebView.setBackgroundColor(Color.TRANSPARENT);
+        metabolicBalanceWebView.setVerticalScrollBarEnabled(false);
+        metabolicBalanceWebView.setHorizontalScrollBarEnabled(false);
+        metabolicBalanceWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        metabolicBalanceWebView.getSettings().setJavaScriptEnabled(true);
+        metabolicBalanceWebView.getSettings().setAllowFileAccess(true);
+        metabolicBalanceWebView.getSettings().setAllowFileAccessFromFileURLs(false);
+        metabolicBalanceWebView.getSettings().setAllowUniversalAccessFromFileURLs(false);
+        metabolicBalanceWebView.getSettings().setAllowContentAccess(false);
+        metabolicBalanceWebView.getSettings().setBlockNetworkLoads(true);
+        metabolicBalanceWebView.addJavascriptInterface(new MetabolicBalanceBridge(), "ThermaBioAndroid");
+        metabolicBalanceWebView.setWebChromeClient(new WebChromeClient());
+        metabolicBalanceWebView.setWebViewClient(new WebViewClient() {
             @Override public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return !"file".equalsIgnoreCase(request.getUrl().getScheme());
             }
             @Override public void onPageFinished(WebView view, String url) {
-                calculationWebViewLoaded = true;
+                metabolicBalanceWebViewLoaded = true;
                 view.evaluateJavascript("document.documentElement.classList.add('embedded');ThermaBioAndroid.reportContentHeight(document.documentElement.scrollHeight);", null);
             }
         });
         LinearLayout.LayoutParams webParams = new LinearLayout.LayoutParams(-1, dp(720));
         webParams.topMargin = dp(12);
-        module.addView(calculationWebView, webParams);
+        module.addView(metabolicBalanceWebView, webParams);
         parent.addView(module, margins(0, 0, 0, 14));
     }
 
-    private void toggleCalculationTools() {
-        if (calculationWebView.getVisibility() == View.VISIBLE) {
-            calculationWebView.setVisibility(View.GONE);
-            calculationToggle.setText("ABRIR CALCULADORA DE DESPEJES  ↓");
+    private void toggleMetabolicBalance() {
+        if (metabolicBalanceWebView.getVisibility() == View.VISIBLE) {
+            metabolicBalanceWebView.setVisibility(View.GONE);
+            metabolicBalanceToggle.setText("ABRIR BALANCE METABÓLICO  ↓");
             return;
         }
-        calculationWebView.setVisibility(View.VISIBLE);
-        calculationToggle.setText("OCULTAR CALCULADORA DE DESPEJES  ↑");
-        if (!calculationWebViewLoaded) calculationWebView.loadUrl("file:///android_asset/despejes.html?embed=1");
+        metabolicBalanceWebView.setVisibility(View.VISIBLE);
+        metabolicBalanceToggle.setText("OCULTAR BALANCE METABÓLICO  ↑");
+        if (!metabolicBalanceWebViewLoaded) metabolicBalanceWebView.loadUrl("file:///android_asset/balance-metabolico.html?embed=1");
     }
 
-    private final class CalculationToolBridge {
+    private final class MetabolicBalanceBridge {
         @JavascriptInterface public void reportContentHeight(int cssHeight) {
             runOnUiThread(() -> {
-                if (calculationWebView == null || calculationWebView.getLayoutParams() == null) return;
-                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) calculationWebView.getLayoutParams();
-                params.height = Math.max(dp(650), Math.min(dp(5000), dp(cssHeight)));
-                calculationWebView.setLayoutParams(params);
+                if (metabolicBalanceWebView == null || metabolicBalanceWebView.getLayoutParams() == null) return;
+                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) metabolicBalanceWebView.getLayoutParams();
+                params.height = Math.max(dp(460), Math.min(dp(2500), dp(cssHeight)));
+                metabolicBalanceWebView.setLayoutParams(params);
+            });
+        }
+        @JavascriptInterface public void applyMetabolicValue(String key, double value) {
+            if (!("qMet".equals(key) || "volume".equals(key) || "agitation".equals(key)) || !Double.isFinite(value)) return;
+            runOnUiThread(() -> {
+                EditText input = editors.get(key);
+                if (input == null) return;
+                input.setText(String.format(Locale.US, "%.10g", value));
+                Toast.makeText(MainActivity.this, "Valor aplicado a la calculadora principal.", Toast.LENGTH_SHORT).show();
             });
         }
     }
@@ -649,9 +658,9 @@ public class MainActivity extends Activity {
             bioreactorWebView.removeJavascriptInterface("ThermaBioAndroid");
             bioreactorWebView.destroy();
         }
-        if (calculationWebView != null) {
-            calculationWebView.removeJavascriptInterface("ThermaBioAndroid");
-            calculationWebView.destroy();
+        if (metabolicBalanceWebView != null) {
+            metabolicBalanceWebView.removeJavascriptInterface("ThermaBioAndroid");
+            metabolicBalanceWebView.destroy();
         }
         super.onDestroy();
     }
