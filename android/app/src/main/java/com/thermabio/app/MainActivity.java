@@ -82,10 +82,7 @@ public class MainActivity extends Activity {
     private TextView statusText;
     private WebView reactorDiagram;
     private WebView fullIndexWebView;
-    private FrameLayout reactorDiagramContainer;
-    private FrameLayout fullIndexContainer;
     private boolean reactorDiagramReady;
-    private boolean fullIndexReady;
     private ScrollView scrollView;
     private FrameLayout root;
     private LinearLayout calculatorScreen;
@@ -510,7 +507,7 @@ public class MainActivity extends Activity {
         tag.setPadding(dp(8), dp(6), dp(8), dp(6));
         module.addView(tag, margins(0, 0, 0, 8));
         module.addView(coilSchematic());
-        Button explore = smallButton("◉ EXPANDIR EN VISOR 3D COMPLETO");
+        Button explore = smallButton("ABRIR MODELO INTERACTIVO DEL INDEX");
         explore.setBackground(projected(TEAL));
         explore.setOnClickListener(v -> showScreen(3));
         module.addView(explore, margins(0, 8, 0, 0));
@@ -561,8 +558,6 @@ public class MainActivity extends Activity {
 
     private void showScreen(int screenIndex) {
         if (screenIndex < 0 || screenIndex > 3) return;
-        if (screenIndex == 1) loadReactorDiagram();
-        if (screenIndex == 3) loadFullIndex();
         LinearLayout target = screenFor(screenIndex);
         LinearLayout current = screenFor(currentScreen);
         if (current == target) {
@@ -593,17 +588,8 @@ public class MainActivity extends Activity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void addFullIndexScreen(LinearLayout parent) {
-        addScreenHeader(parent, "GEMELO DIGITAL 3D", "MODELADO PARAMÉTRICO DEL BIORREACTOR");
-        fullIndexContainer = new FrameLayout(this);
-        fullIndexContainer.setBackgroundColor(BG);
-        parent.addView(fullIndexContainer, new LinearLayout.LayoutParams(-1, dp(980)));
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private void loadFullIndex() {
-        if (fullIndexWebView != null || fullIndexContainer == null) return;
         fullIndexWebView = new WebView(this);
-        fullIndexWebView.setBackgroundColor(BG);
+        fullIndexWebView.setBackgroundColor(Color.rgb(11, 11, 11));
         fullIndexWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         fullIndexWebView.setVerticalScrollBarEnabled(false);
         fullIndexWebView.setHorizontalScrollBarEnabled(false);
@@ -621,25 +607,21 @@ public class MainActivity extends Activity {
             settings.setMixedContentMode(android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         }
         fullIndexWebView.setWebViewClient(new WebViewClient() {
-            @Override public void onPageFinished(WebView view, String url) {
-                fullIndexReady = true;
-                updateReactorDiagram();
+            @Override public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
+                return !"file:///android_asset/index.html".equals(request.getUrl().toString());
+            }
+            @SuppressWarnings("deprecation")
+            @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return !"file:///android_asset/index.html".equals(url);
             }
         });
-        fullIndexContainer.addView(fullIndexWebView, new FrameLayout.LayoutParams(-1, -1));
-        fullIndexWebView.loadUrl("file:///android_asset/model/bioreactor-model.html");
+        parent.addView(fullIndexWebView, new LinearLayout.LayoutParams(-1, dp(720)));
+        fullIndexWebView.loadUrl("file:///android_asset/index.html");
     }
 
     private View coilSchematic() {
         FrameLayout frame = new FrameLayout(this);
         frame.setBackground(rounded(Color.WHITE, 0, INK));
-        reactorDiagramContainer = frame;
-        return frame;
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private void loadReactorDiagram() {
-        if (reactorDiagram != null || reactorDiagramContainer == null) return;
         reactorDiagram = new WebView(this);
         reactorDiagram.setBackgroundColor(Color.TRANSPARENT);
         reactorDiagram.setVerticalScrollBarEnabled(false);
@@ -657,18 +639,20 @@ public class MainActivity extends Activity {
         reactorDiagram.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 reactorDiagramReady = true;
+                view.evaluateJavascript("(function(){document.body.dataset.theme='light';var p=document.getElementById('btnPause');if(p&&p.getAttribute('aria-pressed')!=='true')p.click();})()", null);
                 updateReactorDiagram();
             }
         });
         float density = getResources().getDisplayMetrics().density;
         int screenWidthDp = Math.round(getResources().getDisplayMetrics().widthPixels / density);
         int diagramHeight = Math.min(420, Math.round((screenWidthDp - 52) * 470f / 620f + 58));
-        reactorDiagramContainer.addView(reactorDiagram, new FrameLayout.LayoutParams(-1, dp(diagramHeight)));
+        frame.addView(reactorDiagram, new FrameLayout.LayoutParams(-1, dp(diagramHeight)));
         reactorDiagram.loadUrl("file:///android_asset/model/bioreactor-model.html");
+        return frame;
     }
 
     private void updateReactorDiagram() {
-        if (schematicResults.isEmpty()) return;
+        if (reactorDiagram == null || !reactorDiagramReady || schematicResults.isEmpty()) return;
         double broth = schematicResults.get("brothTemperature");
         double safeTarget = broth - Math.max(1.0, Math.abs(broth) * 0.01);
         String params = "{"
@@ -685,12 +669,7 @@ public class MainActivity extends Activity {
                 + "Tout:" + jsNumber(get(schematicResults, "outletTemperature")) + ","
                 + "caudal:" + jsNumber(get(schematicResults, "flowLpm")) + ","
                 + "U:" + jsNumber(get(schematicResults, "overallU")) + "}";
-        if (reactorDiagram != null && reactorDiagramReady) {
-            reactorDiagram.evaluateJavascript("window.BiorreactorApp&&window.BiorreactorApp.setParametrosIlustracion(" + params + ")", null);
-        }
-        if (fullIndexWebView != null && fullIndexReady) {
-            fullIndexWebView.evaluateJavascript("window.BiorreactorApp&&window.BiorreactorApp.setParametrosIlustracion(" + params + ")", null);
-        }
+        reactorDiagram.evaluateJavascript("window.BiorreactorApp&&window.BiorreactorApp.setParametrosIlustracion(" + params + ")", null);
     }
 
     private String jsNumber(double value) {

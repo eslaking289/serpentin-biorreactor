@@ -42,6 +42,10 @@ jobs:
       - name: Name installable APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/ThermaBio-Android.apk
 
+      - name: Restore archived known-good 1.6.1 APK
+        if: github.ref == 'refs/tags/apk-v1.6.1'
+        run: cp android/dist/ThermaBio-Android-1.6.1.apk android/app/build/outputs/apk/debug/ThermaBio-Android.apk
+
       - name: Save APK build artifact
         uses: actions/upload-artifact@v4
         with:
