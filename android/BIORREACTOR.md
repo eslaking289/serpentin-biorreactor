@@ -1,6 +1,6 @@
 # Modelo y cálculos del index integrado
 
-La app parte de la interfaz nativa estable de la versión 1.6.1. La calculadora conserva el balance metabólico, los despejes de entradas, los resultados y la metodología. El Modelo 3D usa una sola página (`app/src/main/assets/index.html`) tanto para la vista previa de Resultados como para la sección interactiva completa. Los parámetros de geometría y operación calculados por la app nativa se sincronizan con esa página mediante `BiorreactorApp.setParametros`; se mantienen la selección de componentes, modos de vista, etiquetas, animación, temperatura, cálculos y edición/restauración de parámetros.
+La app parte de la interfaz nativa estable de la versión 1.6.1. La calculadora conserva el balance metabólico, los despejes de entradas, los resultados y la metodología. El modelo isométrico se dibuja en Android con `BioreactorModelView`, en Java y sin WebView. La vista previa de Resultados y la sección Modelo 3D reutilizan esa vista y reciben directamente las dimensiones calculadas. En el modelo se puede girar con el dedo, activar rotación, ocultar etiquetas, cambiar el corte y seleccionar componentes; los parámetros y cálculos editables siguen en la calculadora nativa.
 
 ## Ecuaciones del cálculo
 
@@ -20,4 +20,4 @@ Para la temperatura de cultivo seleccionada, la página calcula las diferencias 
 - La geometría, incluidos impulsor y deflectores, es conceptual. No representa un plano de fabricación ni valida resistencia mecánica, soldaduras, soportes o bomba.
 - Los valores ilustrativos iniciales solo sirven para mostrar la figura y no son datos experimentales.
 
-Los cálculos propios del modelo siguen usando las ecuaciones y supuestos descritos arriba, separados del balance metabólico y del dimensionamiento nativo. La geometría y condiciones que se muestran parten de los resultados nativos sincronizados; ambas estimaciones deben validarse para el proceso y equipo reales antes de usarse como base de fabricación u operación.
+Los resultados térmicos y geométricos se calculan en la app nativa y alimentan la figura directamente. Las ecuaciones y supuestos descritos arriba documentan el modelo de referencia del proyecto. La estimación debe validarse para el proceso y equipo reales antes de usarse como base de fabricación u operación.
