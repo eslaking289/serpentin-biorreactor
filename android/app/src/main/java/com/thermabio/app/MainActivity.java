@@ -80,23 +80,28 @@ public class MainActivity extends Activity {
     private LinearLayout summaryGrid;
     private LinearLayout calculatorSummaryGrid;
     private TextView flowWarningText;
-    private final Button[] navigationButtons = new Button[4];
+    private final Button[] navigationButtons = new Button[5];
     private final Button[] modelSectionButtons = new Button[4];
     private final int[] navigationAccents = {TEAL, YELLOW, MAGENTA, TEAL};
     private TextView statusText;
     private WebView modelWebView;
+    private WebView animationWebView;
     private boolean modelWebViewLoaded;
     private boolean modelWebViewReady;
+    private boolean animationWebViewLoaded;
+    private boolean animationWebViewReady;
     private boolean modelPreviewMode;
     private int selectedModelSection;
     private FrameLayout modelPreviewFrame;
     private FrameLayout modelFullFrame;
+    private FrameLayout animationFrame;
     private ScrollView scrollView;
     private FrameLayout root;
     private LinearLayout calculatorScreen;
     private LinearLayout resultsScreen;
     private LinearLayout methodologyScreen;
     private LinearLayout modelScreen;
+    private LinearLayout animationScreen;
     private int currentScreen = 0;
     private Typeface headlineTypeface;
     private Typeface bodyTypeface;
@@ -173,14 +178,17 @@ public class MainActivity extends Activity {
         resultsScreen = newScreen();
         methodologyScreen = newScreen();
         modelScreen = newScreen();
+        animationScreen = newScreen();
         modelScreen.setPadding(0, 0, 0, 0);
         screenStack.addView(calculatorScreen);
         screenStack.addView(resultsScreen);
         screenStack.addView(methodologyScreen);
         screenStack.addView(modelScreen);
+        screenStack.addView(animationScreen);
         resultsScreen.setVisibility(View.GONE);
         methodologyScreen.setVisibility(View.GONE);
         modelScreen.setVisibility(View.GONE);
+        animationScreen.setVisibility(View.GONE);
         LinearLayout page = calculatorScreen;
 
         LinearLayout brand = new LinearLayout(this);
@@ -377,6 +385,7 @@ public class MainActivity extends Activity {
         FrameLayout.LayoutParams scrollParams = new FrameLayout.LayoutParams(-1, -1);
         scrollParams.bottomMargin = dp(92);
         addFullIndexScreen(modelScreen);
+        addAnimationScreen(animationScreen);
         root.addView(scrollView, scrollParams);
 
         LinearLayout navigation = new LinearLayout(this);
@@ -389,6 +398,7 @@ public class MainActivity extends Activity {
         addNavigationItem(navigation, "Resultados", YELLOW, 1);
         addNavigationItem(navigation, "Método", MAGENTA, 2);
         addNavigationItem(navigation, "Modelo 3D", TEAL, 3);
+        addNavigationItem(navigation, "Animación", MAGENTA, 4);
         FrameLayout.LayoutParams navParams = new FrameLayout.LayoutParams(-1, dp(70), Gravity.BOTTOM);
         navParams.setMargins(dp(12), 0, dp(12), dp(8));
         root.addView(navigation, navParams);
@@ -598,7 +608,7 @@ public class MainActivity extends Activity {
     }
 
     private void showScreen(int screenIndex) {
-        if (screenIndex < 0 || screenIndex > 3) return;
+        if (screenIndex < 0 || screenIndex > 4) return;
         LinearLayout target = screenFor(screenIndex);
         LinearLayout current = screenFor(currentScreen);
         if (current == target) {
@@ -618,6 +628,7 @@ public class MainActivity extends Activity {
             showModelIn(modelFullFrame, false);
             selectModelSection(0);
         }
+        if (screenIndex == 4) showAnimationIn(animationFrame);
         for (int i = 0; i < navigationButtons.length; i++) {
             if (navigationButtons[i] != null) {
                 styleNavigationButton(navigationButtons[i], i == screenIndex);
@@ -629,7 +640,82 @@ public class MainActivity extends Activity {
         if (index == 0) return calculatorScreen;
         if (index == 1) return resultsScreen;
         if (index == 2) return methodologyScreen;
-        return modelScreen;
+        if (index == 3) return modelScreen;
+        return animationScreen;
+    }
+
+    private void addAnimationScreen(LinearLayout parent) {
+        addScreenHeader(parent, "BIORREACTOR DE VIDRIO", "ANIMACIÓN INTERACTIVA  ·  ESCALA DE BANCO");
+        TextView intro = text("Explora el recipiente de laboratorio, sus componentes y el movimiento del proceso.", 13, MUTED, false);
+        intro.setLineSpacing(dp(2), 1f);
+        parent.addView(intro, margins(0, 0, 0, 12));
+        animationFrame = new FrameLayout(this);
+        animationFrame.setBackground(rounded(Color.WHITE, 18, LINE));
+        float density = getResources().getDisplayMetrics().density;
+        int viewportHeight = Math.round(getResources().getDisplayMetrics().heightPixels / density) - 220;
+        parent.addView(animationFrame, new LinearLayout.LayoutParams(-1, dp(Math.max(640, Math.min(900, viewportHeight)))));
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private void ensureAnimationWebView() {
+        if (animationWebView != null) return;
+        animationWebView = new WebView(this);
+        animationWebView.setBackgroundColor(BG);
+        animationWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        animationWebView.setVerticalScrollBarEnabled(false);
+        animationWebView.setHorizontalScrollBarEnabled(false);
+        animationWebView.setNestedScrollingEnabled(false);
+        android.webkit.WebSettings settings = animationWebView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(false);
+        settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(false);
+        settings.setBlockNetworkLoads(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(false);
+        settings.setSupportMultipleWindows(false);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        animationWebView.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                animationWebViewReady = true;
+                applyAnimationStyle();
+            }
+            @Override public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
+                return !"file:///android_asset/biorreactor-vidrio.html".equals(request.getUrl().toString());
+            }
+            @SuppressWarnings("deprecation")
+            @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return !"file:///android_asset/biorreactor-vidrio.html".equals(url);
+            }
+        });
+    }
+
+    private void showAnimationIn(FrameLayout target) {
+        if (target == null) return;
+        ensureAnimationWebView();
+        android.view.ViewParent oldParent = animationWebView.getParent();
+        if (oldParent instanceof android.view.ViewGroup) ((android.view.ViewGroup) oldParent).removeView(animationWebView);
+        target.removeAllViews();
+        target.addView(animationWebView, new FrameLayout.LayoutParams(-1, -1));
+        if (animationWebViewReady) applyAnimationStyle();
+        if (!animationWebViewLoaded) {
+            animationWebViewLoaded = true;
+            animationWebView.loadUrl("file:///android_asset/biorreactor-vidrio.html");
+        }
+    }
+
+    private void applyAnimationStyle() {
+        if (animationWebView == null || !animationWebViewReady) return;
+        String js = "(function(){if(!document.body)return;document.body.dataset.theme='light';"
+                + "var s=document.getElementById('thermabioNativeStyle');if(!s){s=document.createElement('style');"
+                + "s.id='thermabioNativeStyle';document.head.appendChild(s);}"
+                + "s.textContent='html,body{margin:0!important;background:#f4f7f6!important}"
+                + ".app{width:auto!important;max-width:none!important;padding:10px 8px 18px!important}"
+                + ".layout{display:block!important}.stage{position:static!important}"
+                + ".iso-plate,.side{border-radius:16px!important;box-shadow:0 2px 10px #19303512!important}"
+                + ".btn{border-radius:10px!important;border-color:#d7e2e1!important}';"
+                + "window.scrollTo(0,0);})()";
+        animationWebView.evaluateJavascript(js, null);
     }
 
     private void addFullIndexScreen(LinearLayout parent) {
