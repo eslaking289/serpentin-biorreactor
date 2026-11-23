@@ -1,6 +1,6 @@
 # Modelo y cálculos del index integrado
 
-La interfaz activa de la APK es el `index.html` original, conservado sin cambios en `app/src/main/assets/index.html`. La pantalla mantiene sus controles: seleccionar componentes del modelo, alternar corte/transparente/cerrado, mostrar u ocultar etiquetas, pausar la animación, cambiar la temperatura visualizada, editar parámetros, revisar cálculos y restaurar valores ilustrativos.
+La app integra dos vistas en una misma navegación. La calculadora nativa conserva el balance metabólico, los despejes de entradas, los resultados y la metodología. La sección Modelo 3D carga el `index.html` original, conservado sin cambios en `app/src/main/assets/index.html`, con sus controles de componentes, modos de vista, etiquetas, animación, temperatura visualizada, parámetros, cálculos y restauración de valores.
 
 ## Ecuaciones del cálculo
 
@@ -20,4 +20,4 @@ Para la temperatura de cultivo seleccionada, la página calcula las diferencias 
 - La geometría, incluidos impulsor y deflectores, es conceptual. No representa un plano de fabricación ni valida resistencia mecánica, soldaduras, soportes o bomba.
 - Los valores ilustrativos iniciales solo sirven para mostrar la figura y no son datos experimentales.
 
-Los controles y resultados son los implementados por el `index.html` suministrado. La estimación debe validarse para el proceso y equipo reales antes de usarla como base de fabricación u operación.
+Los cálculos del `index.html` son independientes del balance metabólico de la calculadora nativa: usan los parámetros y supuestos descritos arriba. La estimación debe validarse para el proceso y equipo reales antes de usarla como base de fabricación u operación.

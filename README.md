@@ -2,9 +2,9 @@
 
 Aplicación Android que empaqueta la interfaz interactiva del biorreactor en un APK instalable. La interfaz se ejecuta desde archivos locales.
 
-**Descarga:** [ThermaBio Android 1.6.0](https://github.com/eslaking289/serpentin-biorreactor/raw/refs/heads/main/android/dist/ThermaBio-Android-1.6.0.apk)
+**Descarga:** [ThermaBio Android 1.6.1](https://github.com/eslaking289/serpentin-biorreactor/raw/refs/heads/main/android/dist/ThermaBio-Android-1.6.1.apk)
 
-La APK muestra el archivo `index.html` completo como interfaz principal: modelo 3D interactivo, selección de componentes, parámetros editables, modos de vista, control de animación y cálculos propios del HTML. El archivo original se conserva dentro del APK y se carga en una vista Android local; no se abre un navegador externo ni se necesitan recursos de Internet. La app no solicita permiso de Internet.
+La APK une las pantallas nativas de ThermaBio (calculadora metabólica con despejes, resultados y metodología) con el `index.html` original como sección **Modelo 3D**. En Resultados se conserva el diagrama sincronizado con las entradas nativas; en Modelo 3D están disponibles también los controles, parámetros y cálculos propios del HTML. Ambas partes se cargan desde recursos locales dentro de la misma app, sin navegador externo ni permiso de Internet.
 
 ## Instalar
 
@@ -35,4 +35,4 @@ Los módulos numéricos de referencia que conserva el repositorio se pueden comp
 node test/verify.js
 ```
 
-El código de la aplicación está en `android/app/`. La interfaz se conserva en `android/app/src/main/assets/index.html`; `MainActivity.java` la abre dentro de una vista WebView local con la carga de red bloqueada.
+El código de la aplicación está en `android/app/`. La interfaz HTML se conserva en `android/app/src/main/assets/index.html`; `MainActivity.java` la abre en la sección Modelo 3D con la carga de red bloqueada.
