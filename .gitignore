@@ -3,6 +3,10 @@ Thumbs.db
 *.log
 informe-thermabio.csv
 .vscode/
+.idea/
+*.iml
 android/.gradle/
 android/local.properties
 android/**/build/
+android/captures/
+.cxx/

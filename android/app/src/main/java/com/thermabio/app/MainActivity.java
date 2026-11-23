@@ -99,7 +99,21 @@ public class MainActivity extends Activity {
         super.onCreate(state);
         getWindow().setStatusBarColor(PAPER);
         getWindow().setNavigationBarColor(PAPER);
-        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            android.view.WindowInsetsController controller = getWindow().getInsetsController();
+            if (controller != null) {
+                int appearance = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
+                        | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
+                controller.setSystemBarsAppearance(appearance, appearance);
+            }
+        } else {
+            @SuppressWarnings("deprecation")
+            int flags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            }
+            getWindow().getDecorView().setSystemUiVisibility(flags);
+        }
         headlineTypeface = loadFont("fonts/SpaceGrotesk.ttf", 800, Typeface.create("sans-serif-black", Typeface.NORMAL));
         bodyTypeface = loadFont("fonts/Chivo.ttf", 400, Typeface.create("sans-serif", Typeface.NORMAL));
         monoTypeface = loadFont("fonts/JetBrainsMono.ttf", 600, Typeface.create("monospace", Typeface.NORMAL));
@@ -1062,6 +1076,7 @@ public class MainActivity extends Activity {
         Toast.makeText(this, "Valores iniciales restaurados.", Toast.LENGTH_SHORT).show();
     }
 
+    @SuppressWarnings("deprecation")
     @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode != CREATE_CSV || resultCode != RESULT_OK || data == null || data.getData() == null) return;
