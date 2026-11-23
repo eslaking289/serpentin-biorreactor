@@ -2,9 +2,9 @@
 
 Aplicación Android para el balance térmico de fermentación y el dimensionamiento preliminar de un serpentín de enfriamiento. Este repositorio mantiene la versión APK; la antigua aplicación web independiente se retiró.
 
-**Descarga:** [ThermaBio Android 1.5.7](https://github.com/eslaking289/serpentin-biorreactor/raw/refs/heads/main/android/dist/ThermaBio-Android-1.5.7.apk)
+**Descarga:** [ThermaBio Android 1.5.8](https://github.com/eslaking289/serpentin-biorreactor/raw/refs/heads/main/android/dist/ThermaBio-Android-1.5.8.apk)
 
-La APK calcula el balance metabólico (`Q̇ = q̇_met · V_caldo + P_agitación`), el deber de enfriamiento, la transferencia térmica, la geometría helicoidal y una estimación de caída de presión. En Resultados se muestra el diagrama paramétrico del biorreactor con los valores actuales. La aplicación no solicita permiso de Internet.
+La APK calcula el balance metabólico (`Q̇ = q̇_met · V_caldo + P_agitación`), el deber de enfriamiento, la transferencia térmica, la geometría helicoidal y una estimación de caída de presión. En Resultados muestra el modelo 3D local del biorreactor, basado en el archivo HTML incluido en los recursos de la APK, con dimensiones sincronizadas con el cálculo nativo. La aplicación no solicita permiso de Internet.
 
 ## Instalar
 
