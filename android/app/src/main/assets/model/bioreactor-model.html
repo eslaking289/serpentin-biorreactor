@@ -106,74 +106,75 @@
 @media (max-width:560px){.iso-plate{padding:48px 12px 70px}.iso-plate-corner[data-corner="hint"]{bottom:18px}}
 @media (prefers-reduced-motion:reduce){.iso-line[data-flow],.iso-dots circle[data-pulse]{animation:none}}
 
-*{box-sizing:border-box}
-html{color-scheme:dark}body[data-theme="light"]{color-scheme:light}
-body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
-.iso{--acc:#f5a524;--bx-edge:#0a0c0f;--bx-steel:#8793a1;--bx-shine:#e3eaf2;--bx-medium:#fb923c}
-.iso[data-theme="light"]{--acc:#d97706;--bx-edge:#3b4148;--bx-steel:#c3cad3;--bx-shine:#ffffff}
-button{font:inherit;color:inherit}
-.app{max-width:1180px;margin:0 auto;padding:10px 12px 40px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 2px 10px}
-.top h1{font-size:16px;margin:0;color:var(--anatomy-strong);font-weight:600;letter-spacing:.01em}
-.top p{margin:0;font-size:12px;color:var(--anatomy-muted)}
-.btn{background:transparent;border:1px solid var(--anatomy-lo);border-radius:6px;padding:7px 11px;min-height:36px;cursor:pointer;font-size:12.5px}
-.btn[aria-pressed="true"]{border-color:var(--acc);color:var(--anatomy-strong)}
-.layout{display:grid;gap:14px}.layout>*{min-width:0}
-@media(min-width:980px){.layout{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:start}.stage{position:sticky;top:10px}}
-.iso-plate.stagecard{padding:40px 6px 44px}
-.iso-plate-corners{inset:14px 14px}
-#fig{touch-action:manipulation}
-#svg{max-height:82vh}
-.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-top:10px}
-.seg{display:inline-flex;border:1px solid var(--anatomy-lo);border-radius:6px;overflow:hidden}
-.seg button{background:transparent;border:0;padding:7px 11px;min-height:36px;cursor:pointer;font-size:12.5px}
-.seg button+button{border-left:1px solid var(--anatomy-lo)}
-.seg button[aria-pressed="true"]{background:var(--anatomy-faint);color:var(--anatomy-strong)}
-.tshow{margin-top:10px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:12.5px}
-.tshow output{font-variant-numeric:tabular-nums;color:var(--anatomy-strong);min-width:64px;text-align:right}
-input[type=range]{width:100%;accent-color:var(--acc);min-height:28px}
-.tabs{display:flex;border-bottom:1px solid var(--anatomy-lo);position:sticky;top:0;background:var(--anatomy-page);z-index:2}
-.tab{flex:1;background:transparent;border:0;border-bottom:2px solid transparent;padding:11px 6px;cursor:pointer;font-size:13.5px;color:var(--anatomy-muted)}
-.tab[aria-selected="true"]{color:var(--anatomy-strong);border-bottom-color:var(--acc)}
-.panel{padding:14px 2px}
-.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px;scrollbar-width:thin}
-.chip{flex:none;background:transparent;border:1px solid var(--anatomy-lo);border-radius:999px;padding:6px 12px;min-height:34px;cursor:pointer;font-size:12.5px;white-space:nowrap}
-.chip[aria-pressed="true"]{border-color:var(--acc);color:var(--anatomy-strong);background:var(--anatomy-faint)}
-#info h3{margin:0 0 8px;font-size:17px;color:var(--anatomy-strong)}
-#info h4,#calc h4{margin:16px 0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--anatomy-muted);font-weight:600}
-.facts{margin:0}.facts dt{font-size:12px;color:var(--anatomy-muted);margin-top:10px}.facts dd{margin:2px 0 0;color:var(--anatomy-text)}
-.plist{list-style:none;margin:0;padding:0}.plist li{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--anatomy-faint)}.plist b{color:var(--anatomy-strong);font-variant-numeric:tabular-nums;font-weight:600}
-.hint,.muted{color:var(--anatomy-muted)}
-fieldset{border:1px solid var(--anatomy-faint);border-radius:8px;margin:0 0 14px;padding:6px 12px 12px}
-legend{padding:0 6px;font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--anatomy-muted)}
-.field{padding:8px 0;border-bottom:1px solid var(--anatomy-faint)}.field:last-child{border-bottom:0}
-.field label{display:block;font-size:13px;color:var(--anatomy-strong);margin-bottom:4px}
-.inp{display:flex;align-items:center;gap:8px}
-.inp input{flex:1;min-width:0;background:var(--anatomy-card);color:var(--anatomy-strong);border:1px solid var(--anatomy-lo);border-radius:6px;padding:8px 10px;min-height:40px;font:inherit;font-variant-numeric:tabular-nums}
-.inp input:focus{outline:2px solid var(--acc);outline-offset:1px}
-.u{font-size:12px;color:var(--anatomy-muted);min-width:64px}
-.note{display:block;font-size:12px;color:var(--anatomy-muted);margin-top:2px}
-.err{font-size:12.5px;margin-top:3px}.err:empty{display:none}.err[data-kind="bad"]{color:var(--anatomy-red)}.err[data-kind="warn"]{color:var(--acc)}
-.field.bad .inp input{border-color:var(--anatomy-red)}.field.warn .inp input{border-color:var(--acc)}
-#banner{border:1px solid var(--anatomy-red);color:var(--anatomy-red);border-radius:6px;padding:8px 10px;margin-bottom:12px;font-size:13px}
-.ill{border-left:2px solid var(--acc);padding:4px 10px;margin:0 0 12px;font-size:12.5px;color:var(--anatomy-muted)}
-.row{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:8px 0;border-bottom:1px solid var(--anatomy-faint)}
-.row .k{color:var(--anatomy-strong)}.row .v{text-align:right;font-variant-numeric:tabular-nums;color:var(--anatomy-strong);font-weight:600}
-.row .f{grid-column:1/-1;font:11.5px var(--anatomy-mono);color:var(--anatomy-muted)}
-.status{margin:10px 0 0;padding:8px 10px;border-radius:6px;border:1px solid var(--anatomy-lo)}
-.status[data-s="coherente"]{border-color:var(--anatomy-green)}.status[data-s="revisar"]{border-color:var(--acc)}.status[data-s="inconsistente"]{border-color:var(--anatomy-red)}
-details{margin-top:16px}summary{cursor:pointer;font-weight:600;color:var(--anatomy-strong)}
-.sup{padding-left:18px;color:var(--anatomy-text)}.sup li{margin:5px 0}
-.errs{padding-left:18px;color:var(--anatomy-red)}
-/* ilustración */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{color-scheme:light;background:#f7f6f2;color:#0b0f10;font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+body{padding:10px 10px 24px}
+.iso{--acc:#00c2c8;--bx-edge:#101313;--bx-steel:#829291;--bx-shine:#ffffff;--bx-medium:#ed9a30}
+.iso[data-theme="light"]{--anatomy-page:#f7f6f2;--anatomy-card:#ffffff;--anatomy-text:#263737;--anatomy-strong:#000000;--anatomy-muted:#52605f;--anatomy-shade-0:#dce3e2;--anatomy-shade-1:#e5ebea;--anatomy-shade-2:#eef2f1;--anatomy-shade-3:#f5f7f6;--anatomy-lit-top:#ffffff;--anatomy-lit-shade:#edf5f4;--anatomy-hi:#111111;--anatomy-mid:#667776;--anatomy-lo:#111111;--anatomy-faint:#d2d9d7;--anatomy-lit:#00aeb3;--anatomy-halo:#41514e;--anatomy-halo-opacity:.16;--anatomy-dot:#162625}
+
+/* Neo-brutalist buttons & badges */
+.btn-brutal{background:#ffffff;color:#0b0f10;font-weight:700;font-size:11px;letter-spacing:.04em;text-transform:uppercase;border:1.5px solid #0b0f10;box-shadow:2px 2px 0 #0b0f10;padding:6px 12px;border-radius:4px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:transform .05s ease,box-shadow .05s ease}
+.btn-brutal:active{transform:translate(1px,1px);box-shadow:1px 1px 0 #0b0f10}
+.btn-brutal[aria-pressed="true"]{background:#00c2c8;color:#0b0f10}
+
+/* HUD Header */
+.hud-header{background:#ffffff;border:2px solid #0b0f10;box-shadow:3px 3px 0 #0b0f10;padding:12px 14px;margin-bottom:12px}
+.hud-title-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.hud-brand{display:flex;align-items:center;gap:8px}
+.hud-badge{background:#00c2c8;color:#0b0f10;font-weight:800;font-size:11px;padding:3px 7px;border:1.5px solid #0b0f10;border-radius:3px}
+.hud-title{font-weight:800;font-size:13px;letter-spacing:.03em;color:#0b0f10}
+.hud-status{font-size:10px;font-weight:700;color:#10b981;display:flex;align-items:center;gap:4px}
+
+/* Telemetry Pills */
+.telemetry-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.telemetry-strip::-webkit-scrollbar{display:none}
+.tele-pill{background:#f7f6f2;border:1.5px solid #0b0f10;border-radius:4px;padding:5px 9px;font-size:10.5px;white-space:nowrap;display:flex;flex-direction:column;gap:1px}
+.tele-label{font-size:9px;color:#64748b;font-weight:700;text-transform:uppercase}
+.tele-val{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-weight:800;color:#0b0f10}
+
+/* 3D Model Stage Frame */
+.model-stage-card{background:#ffffff;border:2px solid #0b0f10;box-shadow:3px 3px 0 #0b0f10;padding:14px 8px 10px;position:relative;margin-bottom:12px}
+.stage-corner-tag{position:absolute;top:10px;left:12px;font-family:ui-monospace,monospace;font-size:9.5px;font-weight:700;color:#64748b;letter-spacing:.06em;text-transform:uppercase}
+.stage-corner-readout{position:absolute;top:10px;right:12px;font-family:ui-monospace,monospace;font-size:9.5px;font-weight:800;color:#0b0f10;background:#ffe600;padding:2px 7px;border:1.5px solid #0b0f10;border-radius:3px}
+
+/* Floating CAD Control Deck */
+.cad-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;padding:10px 4px 4px}
+.view-seg{display:inline-flex;border:1.5px solid #0b0f10;box-shadow:2px 2px 0 #0b0f10;border-radius:4px;overflow:hidden;background:#ffffff}
+.view-seg button{background:#ffffff;border:none;padding:6px 11px;font-size:11px;font-weight:700;color:#0b0f10;cursor:pointer;border-right:1.5px solid #0b0f10}
+.view-seg button:last-child{border-right:none}
+.view-seg button[aria-pressed="true"]{background:#ffe600}
+.cad-actions{display:flex;gap:6px}
+
+/* Thermal Scale Indicator */
+.thermal-scale{background:#ffffff;border:1.5px solid #0b0f10;border-radius:4px;padding:8px 10px;margin-top:10px;display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:700}
+.grad-bar{flex:1;height:6px;margin:0 10px;border-radius:3px;background:linear-gradient(to right,#38bdf8,#f59e0b,#ef4444);border:1px solid #0b0f10}
+
+/* Component Inspector Sheet */
+.inspector-card{background:#ffffff;border:2px solid #0b0f10;box-shadow:3px 3px 0 #0b0f10;padding:12px 14px;margin-bottom:12px}
+.inspector-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding-bottom:6px;border-bottom:1.5px solid #0b0f10}
+.inspector-tag{background:#ffe600;color:#0b0f10;font-weight:800;font-size:10px;padding:2px 6px;border:1px solid #0b0f10;border-radius:2px}
+.inspector-title{font-weight:800;font-size:13px;color:#0b0f10}
+.chips-carousel{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px;scrollbar-width:none}
+.chips-carousel::-webkit-scrollbar{display:none}
+.chip{background:#ffffff;border:1.5px solid #0b0f10;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;box-shadow:1px 1px 0 #0b0f10;color:#0b0f10;transition:all .1s ease}
+.chip[aria-pressed="true"]{background:#00c2c8;color:#0b0f10}
+.inspector-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.inspector-box{background:#f7f6f2;border:1.5px solid #0b0f10;border-radius:4px;padding:8px 10px}
+.inspector-box-full{grid-column:1 / -1;background:#f7f6f2;border:1.5px solid #0b0f10;border-radius:4px;padding:8px 10px}
+.inspector-k{font-size:9.5px;font-weight:700;text-transform:uppercase;color:#64748b;margin-bottom:3px}
+.inspector-v{font-size:11.5px;font-weight:600;color:#0b0f10;line-height:1.4}
+.plist{list-style:none;margin:0;padding:0}.plist li{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid #e2e8f0}.plist b{font-family:ui-monospace,monospace;font-weight:700;color:#0b0f10}
+.muted{color:#64748b;font-size:11px}
+
+/* Ilustración animada */
 .bx-pipe path{vector-effect:none;fill:none;stroke-linecap:round;stroke-linejoin:round}
 .bx-edge{stroke:var(--bx-edge)}.bx-body{stroke:var(--bx-steel)}.bx-shine{stroke:var(--bx-shine);opacity:.75}
 .bx-core{opacity:.92}.bx-glow{stroke-linecap:round}
-.bx-flowline{stroke:#fff;stroke-opacity:.8;stroke-dasharray:2.4 9;animation:bx-flow var(--bx-flow-dur,2s) linear infinite}
+.bx-flowline{stroke:#fff;stroke-opacity:.9;stroke-dasharray:2.4 9;animation:bx-flow var(--bx-flow-dur,2s) linear infinite}
 @keyframes bx-flow{to{stroke-dashoffset:-11.4}}
 .bx-hit{fill:none;stroke:transparent;pointer-events:stroke;stroke-linecap:round;vector-effect:none}
 [data-part]{cursor:pointer}
-[data-part].sel{filter:drop-shadow(0 0 2.5px var(--acc)) drop-shadow(0 0 .8px var(--acc))}
+[data-part].sel{filter:drop-shadow(0 0 3px #00c2c8) drop-shadow(0 0 1px #000)}
 .bx-liq{fill:var(--bx-medium);stroke:none;opacity:.15;pointer-events:all}
 .bx-liq-front{opacity:.07;pointer-events:none}.bx-liq-surf{opacity:.18;pointer-events:none}
 .bx-veil{pointer-events:none}
@@ -186,31 +187,96 @@ details{margin-top:16px}summary{cursor:pointer;font-weight:600;color:var(--anato
 .bx-med-line,.bx-cool-line{fill:none;stroke-width:1.1;stroke-dasharray:2 5;stroke-linecap:round;animation:iso-flow 1.6s linear infinite}
 .bx-med-line{stroke:var(--acc)}
 .bx-label{cursor:pointer}
-.bx-label text{fill:var(--anatomy-text);font-family:var(--anatomy-mono);paint-order:stroke;stroke:var(--anatomy-card);stroke-width:3px;stroke-linejoin:round;letter-spacing:.02em}
+.bx-label text{fill:var(--anatomy-text);font-family:ui-monospace,monospace;paint-order:stroke;stroke:var(--anatomy-card);stroke-width:3px;stroke-linejoin:round;letter-spacing:.02em;font-size:10px}
 .bx-leader{fill:none;stroke:var(--anatomy-mid);stroke-width:.6}.bx-leader-dot{fill:var(--anatomy-hi)}
 .bx-label.sel text{fill:var(--acc);font-weight:700}.bx-label.sel .bx-leader{stroke:var(--acc)}
 .paused *{animation-play-state:paused!important}
-@media(prefers-reduced-motion:reduce){.bx-flowline,.bx-swirl,.bx-heat-line,.bx-med-line,.bx-cool-line{animation:none}}
+@media(max-width:560px){.inspector-grid{grid-template-columns:1fr}}
+</style></head>
+<body class="iso" data-theme="light"><div class="app">
+  <header class="hud-header">
+    <div class="hud-title-row">
+      <div class="hud-brand">
+        <span class="hud-badge">TB-3D</span>
+        <span class="hud-title">GEMELO DIGITAL · BIORREACTOR</span>
+      </div>
+      <div class="hud-status">● CÁLCULO LOCAL ACTIVO</div>
+    </div>
+    <div class="telemetry-strip">
+      <div class="tele-pill">
+        <span class="tele-label">Potencia Q̇</span>
+        <span class="tele-val" id="hud-q">--</span>
+      </div>
+      <div class="tele-pill">
+        <span class="tele-label">Vueltas N</span>
+        <span class="tele-val" id="hud-n">--</span>
+      </div>
+      <div class="tele-pill">
+        <span class="tele-label">Longitud L</span>
+        <span class="tele-val" id="hud-l">--</span>
+      </div>
+      <div class="tele-pill">
+        <span class="tele-label">Ø Hélice Dc</span>
+        <span class="tele-val" id="hud-dc">--</span>
+      </div>
+      <div class="tele-pill">
+        <span class="tele-label">Caudal Ref.</span>
+        <span class="tele-val" id="hud-flow">--</span>
+      </div>
+    </div>
+  </header>
 
-/* ThermaBio Android: render only the supplied technical illustration. */
-html,body{height:100%;overflow:hidden}body{background:transparent!important}.app{max-width:none;height:100%;padding:0}.top,.side,.bar,.tshow{display:none!important}.layout{display:block;height:100%}.stage{position:static!important}.iso-figure{margin:0}.iso-plate.stagecard{padding:25px 8px 32px;border-radius:0;box-shadow:none;background:transparent}.iso-plate-corners{inset:10px 12px}.iso-plate-corner{font-size:9px}#svg{max-height:none;width:100%}.iso-legend{display:none}.bx-flowline,.bx-swirl,.bx-heat-line,.bx-med-line,.bx-cool-line,.iso-line[data-flow],.iso-dots circle[data-pulse]{animation:none!important}
-.iso[data-theme="light"]{--anatomy-page:#fcfae3;--anatomy-card:#ffffff;--anatomy-text:#263737;--anatomy-strong:#000000;--anatomy-muted:#52605f;--anatomy-shade-0:#dce3e2;--anatomy-shade-1:#e5ebea;--anatomy-shade-2:#eef2f1;--anatomy-shade-3:#f5f7f6;--anatomy-lit-top:#ffffff;--anatomy-lit-shade:#edf5f4;--anatomy-hi:#111111;--anatomy-mid:#667776;--anatomy-lo:#111111;--anatomy-faint:#d2d9d7;--anatomy-lit:#00aeb3;--anatomy-halo:#41514e;--anatomy-halo-opacity:.16;--anatomy-dot:#162625;--acc:#00c2c8;--bx-edge:#101313;--bx-steel:#829291;--bx-shine:#ffffff;--bx-medium:#ed9a30}</style></head>
-<body class="iso" data-theme="dark"><div class="app">
-<header class="top"><div><h1>Biorreactor con serpentín helicoidal</h1><p>Ilustración técnica interactiva</p></div><button class="btn" id="btnTheme" type="button">Claro / oscuro</button></header>
-<div class="layout">
-<section class="stage"><figure class="iso-figure" style="margin:0"><div class="iso-plate stagecard">
-<div class="iso-plate-corners" aria-hidden="true"><span class="iso-plate-corner" data-corner="fig">Fig 1</span><span class="iso-plate-corner" data-corner="title">Biorreactor 3D</span><span class="iso-plate-corner" data-corner="hint">Toca un componente</span><span class="iso-plate-corner" data-corner="readout" data-readout></span></div>
-<div id="fig"><svg id="svg" class="iso-svg" viewBox="0 0 620 470" role="img" aria-label="Biorreactor cilíndrico vertical de acero inoxidable en corte parcial, con agitador de dos turbinas, cuatro deflectores y un serpentín helicoidal de enfriamiento. El refrigerante entra por abajo, sube por la hélice y sale por la tapa."><g id="g-base"></g><g id="g-back"></g><g id="g-coilBack"></g><g id="g-flow"></g><g id="g-dynBack"></g><g id="g-shaft"></g><g id="g-dyn"></g><g id="g-dynFront"></g><g id="g-front"></g><g id="g-heat"></g><g id="g-veil"></g><g id="g-shell"></g><g id="g-top"></g><g id="g-labels"></g></svg></div>
+  <div class="model-stage-card">
+    <span class="stage-corner-tag">AXONOMETRÍA 30°/45° · ISOMÉTRICO</span>
+    <span class="stage-corner-readout" data-readout>INICIALIZANDO...</span>
+    <div id="fig" style="margin-top:18px;">
+      <svg id="svg" class="iso-svg" viewBox="0 0 620 470" role="img" aria-label="Biorreactor con serpentín helicoidal">
+        <g id="g-base"></g><g id="g-back"></g><g id="g-coilBack"></g><g id="g-flow"></g><g id="g-dynBack"></g><g id="g-shaft"></g><g id="g-dyn"></g><g id="g-dynFront"></g><g id="g-front"></g><g id="g-heat"></g><g id="g-veil"></g><g id="g-shell"></g><g id="g-top"></g><g id="g-labels"></g>
+      </svg>
+    </div>
+
+    <div class="cad-controls">
+      <div class="view-seg" role="group" aria-label="Vista del tanque">
+        <button type="button" data-view="cut" aria-pressed="true">✂ CORTE</button>
+        <button type="button" data-view="glass" aria-pressed="false">◇ CRISTAL</button>
+        <button type="button" data-view="closed" aria-pressed="false">▣ CERRADO</button>
+      </div>
+      <div class="cad-actions">
+        <button class="btn-brutal" id="btnLabels" type="button" aria-pressed="true">🏷 COTAS</button>
+        <button class="btn-brutal" id="btnPause" type="button" aria-pressed="false">⚡ FLUJO</button>
+      </div>
+    </div>
+
+    <div class="thermal-scale">
+      <span style="color:#0284c7">❄ Entrada Tin: <b id="leg-tin">--</b>°C</span>
+      <div class="grad-bar"></div>
+      <span style="color:#ea580c">♨ Salida Tout: <b id="leg-tout">--</b>°C</span>
+      <span style="margin-left:8px;padding-left:8px;border-left:1.5px solid #0b0f10;color:#dc2626">🧫 Caldo: <b id="leg-t0">--</b>°C</span>
+    </div>
+  </div>
+
+  <div class="inspector-card">
+    <div class="inspector-header">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span class="inspector-tag">INSPECTOR</span>
+        <span class="inspector-title" id="inspector-title-text">TOCA UNA PIEZA O SELECCIONA</span>
+      </div>
+      <span style="font-size:10px;font-weight:700;color:#64748b;">AISI 316L / ASME-BPE</span>
+    </div>
+    <div class="chips-carousel" id="chips"></div>
+    <div id="info"></div>
+  </div>
+
+  <div style="display:none;">
+    <button id="btnTheme" type="button"></button>
+    <button id="btnReset" type="button"></button>
+    <input id="tshow" type="range">
+    <output id="tshowv"></output>
+    <div id="calc"></div>
+    <div id="form"></div>
+    <div id="banner"></div>
+  </div>
 </div>
-<figcaption class="iso-legend"><span class="iso-keys"><span class="iso-key"><svg class="iso-swatch" viewBox="0 0 16 10"><path d="M1.5 5h13" style="stroke:var(--anatomy-blue);stroke-width:2"/></svg>Refrigerante frío</span><span class="iso-key"><svg class="iso-swatch" viewBox="0 0 16 10"><path d="M1.5 5h13" style="stroke:var(--anatomy-red);stroke-width:2"/></svg>Medio caliente</span><span class="iso-key"><svg class="iso-swatch" viewBox="0 0 16 10"><path d="M1.5 5h13" style="stroke-dasharray:3 2.5"/></svg>Calor hacia el serpentín</span></span></figcaption></figure>
-<div class="bar"><div class="seg" role="group" aria-label="Vista del tanque"><button type="button" data-view="cut" aria-pressed="true">Corte</button><button type="button" data-view="glass" aria-pressed="false">Transparente</button><button type="button" data-view="closed" aria-pressed="false">Cerrado</button></div><div style="display:flex;gap:8px"><button class="btn" id="btnLabels" type="button" aria-pressed="true">Etiquetas</button><button class="btn" id="btnPause" type="button" aria-pressed="false">Pausar</button></div></div>
-<div class="tshow"><label for="tshow">Temperatura del cultivo mostrada</label><input id="tshow" type="range"><output id="tshowv"></output></div>
-</section>
-<section class="side"><div class="tabs" role="tablist"><button class="tab" role="tab" data-tab="comp" aria-selected="true">Componente</button><button class="tab" role="tab" data-tab="par" aria-selected="false">Parámetros</button><button class="tab" role="tab" data-tab="calc" aria-selected="false">Cálculos</button></div>
-<div class="panel" data-tab="comp"><div class="chips" id="chips"></div><div id="info"></div></div>
-<div class="panel" data-tab="par" hidden><p class="ill">Los valores iniciales son ilustrativos para poder dibujar el modelo. No son resultados experimentales.</p><div id="banner" hidden></div><div id="form"></div><button class="btn" id="btnReset" type="button">Restablecer valores ilustrativos</button></div>
-<div class="panel" data-tab="calc" hidden><div id="calc"></div></div>
-</section></div></div>
 <script>const AZIMUTH = 45;
 const ELEVATION = 30;
 const SHADES = 4;
@@ -1878,9 +1944,19 @@ const APP = (() => {
   }
   function readout() {
     const r = $("[data-readout]");
-    if (!r) return;
     const c = calcular(state.goodPar, state.tshow);
-    r.textContent = c.ok ? `L ${nf(c.L, 2)} m · A ${nf(c.A, 3)} m² · Q̇ ${nf(c.act.q, 0)} W` : "revisa los parámetros";
+    const p = state.goodPar;
+    if (r) {
+      r.textContent = c.ok ? `L ${nf(c.L, 2)}m · A ${nf(c.A, 3)}m² · Q̇ ${nf(c.act.q, 0)}W` : "CALCULANDO...";
+    }
+    if ($("#hud-q")) $("#hud-q").textContent = c.ok && c.act && c.act.q ? nf(c.act.q / 1000, 2) + " kW" : "--";
+    if ($("#hud-n")) $("#hud-n").textContent = p.N ? nf(p.N, 2) : "--";
+    if ($("#hud-l")) $("#hud-l").textContent = c.ok && c.L ? nf(c.L, 2) + " m" : "--";
+    if ($("#hud-dc")) $("#hud-dc").textContent = p.Dc ? nf(p.Dc, 1) + " cm" : "--";
+    if ($("#hud-flow")) $("#hud-flow").textContent = p.caudal ? nf(p.caudal, 1) + " L/min" : "--";
+    if ($("#leg-tin")) $("#leg-tin").textContent = p.Tin != null ? nf(p.Tin, 1) : "--";
+    if ($("#leg-tout")) $("#leg-tout").textContent = p.Tout != null ? nf(p.Tout, 1) : "--";
+    if ($("#leg-t0")) $("#leg-t0").textContent = p.T0 != null ? nf(p.T0, 1) : "--";
   }
   function paramRow(key) {
     const c = CAMPOS[key];
@@ -1891,19 +1967,20 @@ const APP = (() => {
     const box = $("#info");
     const id = state.sel;
     if (!id) {
-      box.innerHTML = `<p class="hint">Toca un componente en la ilustración o elígelo de la lista para ver su función, material y parámetros.</p>`;
+      box.innerHTML = `<div class="inspector-box-full"><div class="inspector-k">ESTADO DE SELECCIÓN</div><div class="inspector-v">Toca cualquier componente en el modelo 3D o en los botones superiores para inspeccionar su función, material y parámetros de cálculo.</div></div>`;
+      if ($("#inspector-title-text")) $("#inspector-title-text").textContent = "TOCA UNA PIEZA DEL BIORREACTOR";
       return;
     }
     const c = COMPONENTES[id];
-    const lista = c.params.length ? `<ul class="plist">${c.params.map(paramRow).join("")}</ul>` : `<p class="muted">Este componente no depende de los parámetros del panel.</p>`;
-    box.innerHTML = `<h3>${c.nombre}</h3>
-      <dl class="facts">
-        <dt>Función</dt><dd>${c.funcion}</dd>
-        <dt>Descripción técnica</dt><dd>${c.descripcion}</dd>
-        <dt>Material sugerido</dt><dd>${c.material}</dd>
-        <dt>Importancia en el sistema</dt><dd>${c.importancia}</dd>
-      </dl>
-      <h4>Parámetros relacionados</h4>${lista}`;
+    const lista = c.params && c.params.length ? `<ul class="plist">${c.params.map(paramRow).join("")}</ul>` : `<p class="muted">Parámetro geométrico intrínseco de construcción.</p>`;
+    box.innerHTML = `
+      <div class="inspector-grid">
+        <div class="inspector-box"><div class="inspector-k">Función Operativa</div><div class="inspector-v">${c.funcion}</div></div>
+        <div class="inspector-box"><div class="inspector-k">Material Sanitario</div><div class="inspector-v">${c.material}</div></div>
+        <div class="inspector-box-full"><div class="inspector-k">Importancia en el Biorreactor</div><div class="inspector-v">${c.importancia}</div></div>
+        <div class="inspector-box-full"><div class="inspector-k">Cotas Actuales</div><div class="inspector-v">${lista}</div></div>
+      </div>`;
+    if ($("#inspector-title-text")) $("#inspector-title-text").textContent = c.nombre.toUpperCase();
   }
 
   // ---------- Parámetros ----------
@@ -2055,7 +2132,7 @@ const APP = (() => {
     window.BiorreactorApp = {
       getParametros: () => ({ ...state.goodPar }),
       setParametros: (obj) => { state.par = sincronizar({ ...state.par, ...obj }, obj && "L" in obj && !("N" in obj) ? "L" : "N"); buildForm(); applyParams(); },
-      setParametrosIlustracion: (obj) => { const next = sincronizar({ ...state.goodPar, ...obj }, "N"); state.par = next; state.goodPar = { ...next }; state.anchor = "N"; if (Number.isFinite(next.T0)) state.tshow = next.T0; rebuild(); },
+      setParametrosIlustracion: (obj) => { const next = sincronizar({ ...state.goodPar, ...obj }, "N"); state.par = next; state.goodPar = { ...next }; state.anchor = "N"; if (Number.isFinite(next.T0)) state.tshow = next.T0; rebuild(); readout(); renderInfo(); },
       seleccionar: select,
       resultados: () => calcular(state.goodPar, state.tshow),
     };

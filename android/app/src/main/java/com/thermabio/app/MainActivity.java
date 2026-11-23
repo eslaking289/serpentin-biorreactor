@@ -83,6 +83,7 @@ public class MainActivity extends Activity {
     private WebView reactorDiagram;
     private WebView fullIndexWebView;
     private boolean reactorDiagramReady;
+    private boolean fullIndexReady;
     private ScrollView scrollView;
     private FrameLayout root;
     private LinearLayout calculatorScreen;
@@ -507,7 +508,7 @@ public class MainActivity extends Activity {
         tag.setPadding(dp(8), dp(6), dp(8), dp(6));
         module.addView(tag, margins(0, 0, 0, 8));
         module.addView(coilSchematic());
-        Button explore = smallButton("ABRIR MODELO INTERACTIVO DEL INDEX");
+        Button explore = smallButton("◉ EXPANDIR EN VISOR 3D COMPLETO");
         explore.setBackground(projected(TEAL));
         explore.setOnClickListener(v -> showScreen(3));
         module.addView(explore, margins(0, 8, 0, 0));
@@ -588,8 +589,9 @@ public class MainActivity extends Activity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void addFullIndexScreen(LinearLayout parent) {
+        addScreenHeader(parent, "GEMELO DIGITAL 3D", "MODELADO PARAMÉTRICO DEL BIORREACTOR");
         fullIndexWebView = new WebView(this);
-        fullIndexWebView.setBackgroundColor(Color.rgb(11, 11, 11));
+        fullIndexWebView.setBackgroundColor(BG);
         fullIndexWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         fullIndexWebView.setVerticalScrollBarEnabled(false);
         fullIndexWebView.setHorizontalScrollBarEnabled(false);
@@ -607,16 +609,13 @@ public class MainActivity extends Activity {
             settings.setMixedContentMode(android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         }
         fullIndexWebView.setWebViewClient(new WebViewClient() {
-            @Override public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
-                return !"file:///android_asset/index.html".equals(request.getUrl().toString());
-            }
-            @SuppressWarnings("deprecation")
-            @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                return !"file:///android_asset/index.html".equals(url);
+            @Override public void onPageFinished(WebView view, String url) {
+                fullIndexReady = true;
+                updateReactorDiagram();
             }
         });
-        parent.addView(fullIndexWebView, new LinearLayout.LayoutParams(-1, dp(720)));
-        fullIndexWebView.loadUrl("file:///android_asset/index.html");
+        parent.addView(fullIndexWebView, new LinearLayout.LayoutParams(-1, dp(980)));
+        fullIndexWebView.loadUrl("file:///android_asset/model/bioreactor-model.html");
     }
 
     private View coilSchematic() {
@@ -639,7 +638,6 @@ public class MainActivity extends Activity {
         reactorDiagram.setWebViewClient(new WebViewClient() {
             @Override public void onPageFinished(WebView view, String url) {
                 reactorDiagramReady = true;
-                view.evaluateJavascript("(function(){document.body.dataset.theme='light';var p=document.getElementById('btnPause');if(p&&p.getAttribute('aria-pressed')!=='true')p.click();})()", null);
                 updateReactorDiagram();
             }
         });
@@ -652,7 +650,7 @@ public class MainActivity extends Activity {
     }
 
     private void updateReactorDiagram() {
-        if (reactorDiagram == null || !reactorDiagramReady || schematicResults.isEmpty()) return;
+        if (schematicResults.isEmpty()) return;
         double broth = schematicResults.get("brothTemperature");
         double safeTarget = broth - Math.max(1.0, Math.abs(broth) * 0.01);
         String params = "{"
@@ -669,7 +667,12 @@ public class MainActivity extends Activity {
                 + "Tout:" + jsNumber(get(schematicResults, "outletTemperature")) + ","
                 + "caudal:" + jsNumber(get(schematicResults, "flowLpm")) + ","
                 + "U:" + jsNumber(get(schematicResults, "overallU")) + "}";
-        reactorDiagram.evaluateJavascript("window.BiorreactorApp&&window.BiorreactorApp.setParametrosIlustracion(" + params + ")", null);
+        if (reactorDiagram != null && reactorDiagramReady) {
+            reactorDiagram.evaluateJavascript("window.BiorreactorApp&&window.BiorreactorApp.setParametrosIlustracion(" + params + ")", null);
+        }
+        if (fullIndexWebView != null && fullIndexReady) {
+            fullIndexWebView.evaluateJavascript("window.BiorreactorApp&&window.BiorreactorApp.setParametrosIlustracion(" + params + ")", null);
+        }
     }
 
     private String jsNumber(double value) {
