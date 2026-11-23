@@ -684,7 +684,7 @@ public class MainActivity extends Activity {
                 + "caudal:" + jsNumber(get(schematicResults, "flowLpm")) + ","
                 + "U:" + jsNumber(get(schematicResults, "overallU")) + "}";
         if (fullIndexWebView != null && fullIndexReady) {
-            fullIndexWebView.evaluateJavascript("window.BiorreactorApp&&window.BiorreactorApp.setParametrosIlustracion(" + params + ")", null);
+            fullIndexWebView.evaluateJavascript("window.BiorreactorApp&&window.BiorreactorApp.setParametros(" + params + ")", null);
         }
     }
 
