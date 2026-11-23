@@ -81,12 +81,14 @@ public class MainActivity extends Activity {
     private LinearLayout calculatorSummaryGrid;
     private TextView flowWarningText;
     private final Button[] navigationButtons = new Button[4];
+    private final Button[] modelSectionButtons = new Button[4];
     private final int[] navigationAccents = {TEAL, YELLOW, MAGENTA, TEAL};
     private TextView statusText;
     private WebView modelWebView;
     private boolean modelWebViewLoaded;
     private boolean modelWebViewReady;
     private boolean modelPreviewMode;
+    private int selectedModelSection;
     private FrameLayout modelPreviewFrame;
     private FrameLayout modelFullFrame;
     private ScrollView scrollView;
@@ -612,7 +614,10 @@ public class MainActivity extends Activity {
         }).start();
         currentScreen = screenIndex;
         if (screenIndex == 1) showModelIn(modelPreviewFrame, true);
-        if (screenIndex == 3) showModelIn(modelFullFrame, false);
+        if (screenIndex == 3) {
+            showModelIn(modelFullFrame, false);
+            selectModelSection(0);
+        }
         for (int i = 0; i < navigationButtons.length; i++) {
             if (navigationButtons[i] != null) {
                 styleNavigationButton(navigationButtons[i], i == screenIndex);
@@ -629,11 +634,57 @@ public class MainActivity extends Activity {
 
     private void addFullIndexScreen(LinearLayout parent) {
         addScreenHeader(parent, "MODELO 3D DEL BIORREACTOR", "COMPONENTES  ·  PARÁMETROS  ·  CÁLCULOS");
+        LinearLayout sections = new LinearLayout(this);
+        sections.setOrientation(LinearLayout.HORIZONTAL);
+        sections.setGravity(Gravity.CENTER);
+        sections.setPadding(dp(4), dp(4), dp(4), dp(4));
+        sections.setBackground(rounded(Color.WHITE, 16, LINE));
+        String[] sectionNames = {"Modelo", "Componentes", "Parámetros", "Cálculos"};
+        for (int i = 0; i < sectionNames.length; i++) {
+            final int section = i;
+            Button button = new Button(this);
+            button.setText(sectionNames[i]);
+            button.setTextSize(9.5f);
+            button.setAllCaps(false);
+            button.setMinHeight(dp(42));
+            button.setPadding(dp(2), 0, dp(2), 0);
+            button.setTypeface(headlineTypeface);
+            button.setBackground(rounded(Color.TRANSPARENT, 12, null));
+            modelSectionButtons[i] = button;
+            styleModelSectionButton(button, i == selectedModelSection);
+            button.setOnClickListener(v -> selectModelSection(section));
+            LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(0, -1, 1f);
+            buttonParams.setMargins(dp(2), 0, dp(2), 0);
+            sections.addView(button, buttonParams);
+        }
+        parent.addView(sections, margins(0, 0, 0, 10));
         modelFullFrame = new FrameLayout(this);
         modelFullFrame.setBackground(rounded(Color.WHITE, 18, LINE));
         float density = getResources().getDisplayMetrics().density;
         int viewportHeight = Math.round(getResources().getDisplayMetrics().heightPixels / density) - 220;
         parent.addView(modelFullFrame, new LinearLayout.LayoutParams(-1, dp(Math.max(640, Math.min(900, viewportHeight)))));
+    }
+
+    private void selectModelSection(int section) {
+        selectedModelSection = section;
+        for (int i = 0; i < modelSectionButtons.length; i++) {
+            if (modelSectionButtons[i] != null) styleModelSectionButton(modelSectionButtons[i], i == section);
+        }
+        if (modelWebView == null || !modelWebViewReady) return;
+        if (section == 0) {
+            modelWebView.evaluateJavascript("window.scrollTo({top:0,behavior:'smooth'})", null);
+            return;
+        }
+        String tab = section == 1 ? "comp" : section == 2 ? "par" : "calc";
+        String js = "(function(){var b=document.querySelector('.tab[data-tab=\"" + tab + "\"]');if(b)b.click();"
+                + "var p=document.querySelector('.side');if(p)p.scrollIntoView({behavior:'smooth',block:'start'})})()";
+        modelWebView.evaluateJavascript(js, null);
+    }
+
+    private void styleModelSectionButton(Button button, boolean selected) {
+        button.setTextColor(selected ? TEAL : MUTED);
+        button.setTypeface(headlineTypeface, selected ? Typeface.BOLD : Typeface.NORMAL);
+        button.setBackground(rounded(selected ? TEAL_SOFT : Color.TRANSPARENT, 12, null));
     }
 
     @SuppressLint("SetJavaScriptEnabled")
