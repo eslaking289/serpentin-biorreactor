@@ -26,7 +26,9 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
       - name: Prepare empty site
-        run: mkdir -p _site && printf 'User-agent: *\nDisallow: /\n' > _site/robots.txt
+        run: |
+          mkdir -p _site
+          printf '%s\n' 'User-agent: *' 'Disallow: /' > _site/robots.txt
       - name: Upload empty site
         uses: actions/upload-pages-artifact@v3
         with:
