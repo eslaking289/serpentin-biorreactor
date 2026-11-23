@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://eslaking289.github.io/serpentin-biorreactor/sitemap.xml

@@ -1,21 +1,11 @@
-name: Deploy ThermaBio to GitHub Pages
+name: Retire legacy web application
 
 on:
   push:
     branches: [main]
     paths:
-      - "index.html"
-      - "metodologia.html"
-      - "styles.css"
-      - "app.js"
-      - "core.js"
-      - "service-worker.js"
-      - "manifest.webmanifest"
-      - "icons/**"
-      - "robots.txt"
-      - "sitemap.xml"
-      - "googlebe0e85bae0c0e96a.html"
       - ".github/workflows/pages.yml"
+      - "android/**"
   workflow_dispatch:
 
 permissions:
@@ -28,27 +18,18 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  deploy:
+  retire-site:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - name: Prepare site files
-        run: |
-          mkdir _site
-          cp index.html metodologia.html styles.css core.js app.js service-worker.js manifest.webmanifest robots.txt sitemap.xml googlebe0e85bae0c0e96a.html _site/
-          cp -R icons _site/icons
-      - name: Upload site artifact
+      - name: Prepare empty site
+        run: mkdir -p _site && printf 'User-agent: *\nDisallow: /\n' > _site/robots.txt
+      - name: Upload empty site
         uses: actions/upload-pages-artifact@v3
         with:
           path: _site
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - name: Publish empty site
         uses: actions/deploy-pages@v4
