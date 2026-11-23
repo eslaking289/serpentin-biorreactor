@@ -5,11 +5,7 @@ import android.app.AlertDialog;
 import android.content.res.AssetFileDescriptor;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Paint;
-import android.graphics.Path;
-import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.ColorDrawable;
@@ -75,7 +71,6 @@ public class MainActivity extends Activity {
     private final List<Spec> specs = new ArrayList<>();
     private final Map<String, EditText> editors = new LinkedHashMap<>();
     private final Map<String, Double> values = new LinkedHashMap<>();
-    private final Map<String, Double> schematicResults = new LinkedHashMap<>();
     private final Map<String, String> resultValues = new LinkedHashMap<>();
     private final Map<String, String> resultUnits = new LinkedHashMap<>();
     private SharedPreferences preferences;
@@ -86,7 +81,6 @@ public class MainActivity extends Activity {
     private final Button[] navigationButtons = new Button[3];
     private final int[] navigationAccents = {TEAL, YELLOW, MAGENTA};
     private TextView statusText;
-    private CoilDiagramView coilDiagram;
     private WebView metabolicBalanceWebView;
     private boolean metabolicBalanceWebViewLoaded;
     private WebView bioreactorWebView;
@@ -202,7 +196,8 @@ public class MainActivity extends Activity {
                 currentGroup = spec.group;
                 fieldRow = null;
                 fieldInGroup = 0;
-                TextView heading = text(currentGroup.toUpperCase(Locale.ROOT), 16, INK, true);
+                TextView heading = text(currentGroup.toUpperCase(Locale.ROOT), 13, INK, true);
+                heading.setLetterSpacing(0.04f);
                 int groupAccent = currentGroup.equals("Calor metabólico y biomasa") ? YELLOW : currentGroup.equals("Temperaturas del proceso") ? MAGENTA : currentGroup.equals("Propiedades del refrigerante") ? TEAL : MAGENTA;
                 heading.setPadding(dp(10), dp(8), dp(10), dp(8));
                 heading.setBackground(rounded(groupAccent, 3, INK));
@@ -253,7 +248,6 @@ public class MainActivity extends Activity {
         flowWarningText.setBackground(rounded(YELLOW, 0, INK));
         flowWarningText.setVisibility(View.GONE);
         output.addView(flowWarningText, margins(0, 0, 0, 12));
-        output.addView(coilSchematic(), margins(0, 0, 0, 12));
         summaryGrid = new LinearLayout(this);
         summaryGrid.setOrientation(LinearLayout.VERTICAL);
         output.addView(summaryGrid);
@@ -673,173 +667,6 @@ public class MainActivity extends Activity {
         }
     }
 
-    private View coilSchematic() {
-        FrameLayout diagram = new FrameLayout(this);
-        diagram.setBackground(rounded(Color.WHITE, 0, INK));
-        coilDiagram = new CoilDiagramView(this);
-        diagram.addView(coilDiagram, new FrameLayout.LayoutParams(-1, dp(224)));
-        TextView caption = text("VISTA FRONTAL · COTAS ACTUALIZADAS CON LOS PARÁMETROS", 8, MUTED, true);
-        caption.setGravity(Gravity.CENTER);
-        caption.setPadding(dp(4), dp(3), dp(4), dp(3));
-        caption.setBackgroundColor(Color.WHITE);
-        FrameLayout.LayoutParams captionParams = new FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM);
-        diagram.addView(caption, captionParams);
-        return diagram;
-    }
-
-    private final class CoilDiagramView extends View {
-        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        private final Path coilPath = new Path();
-        private final int liquidColor = Color.rgb(224, 241, 240);
-        private final int inletColor = Color.rgb(0, 111, 153);
-
-        CoilDiagramView(Context context) {
-            super(context);
-            setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-        }
-
-        @Override protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            float width = getWidth(), height = getHeight();
-            canvas.drawColor(Color.WHITE);
-            paint.setTypeface(monoTypeface);
-            paint.setTextSize(dp(8));
-            paint.setColor(MUTED);
-            paint.setStyle(Paint.Style.FILL);
-            canvas.drawText("BIORREACTOR · VISTA FRONTAL", dp(8), dp(13), paint);
-
-            if (schematicResults.isEmpty()) {
-                paint.setColor(MAGENTA);
-                paint.setTextSize(dp(10));
-                canvas.drawText("Revisa las entradas para dibujar la geometría.", dp(12), height * .52f, paint);
-                return;
-            }
-
-            double tankD = schematicResults.get("tankDiameter");
-            double tankH = schematicResults.get("tankHeight");
-            double liquidH = schematicResults.get("liquidHeight");
-            double coilD = schematicResults.get("coilDiameter");
-            double tubeD = schematicResults.get("tubeDiameter");
-            double pitch = schematicResults.get("pitch");
-            double turns = schematicResults.get("turns");
-            double coilH = schematicResults.get("coilHeight");
-
-            float top = dp(23), bottomLimit = height - dp(48);
-            float scale = Math.min((width * .49f) / (float) tankD, (bottomLimit - top) / (float) tankH);
-            float tankPxW = (float) tankD * scale, tankPxH = (float) tankH * scale;
-            float left = width * .38f - tankPxW / 2, right = left + tankPxW;
-            float vesselTop = top + (bottomLimit - top - tankPxH) / 2;
-            float vesselBottom = vesselTop + tankPxH;
-            float wall = Math.max(dp(2), (float) (tubeD * scale * .22));
-            RectF body = new RectF(left, vesselTop, right, vesselBottom);
-            RectF inside = new RectF(left + wall, vesselTop + wall, right - wall, vesselBottom - wall);
-
-            paint.setStyle(Paint.Style.FILL);
-            paint.setColor(Color.rgb(252, 250, 227));
-            canvas.drawRoundRect(body, dp(11), dp(11), paint);
-            float liquidY = inside.bottom - (float) liquidH * scale;
-            canvas.save();
-            canvas.clipRect(inside.left, Math.max(inside.top, liquidY), inside.right, inside.bottom);
-            paint.setColor(liquidColor);
-            canvas.drawRect(inside, paint);
-            canvas.restore();
-
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(dp(2));
-            paint.setColor(INK);
-            canvas.drawRoundRect(body, dp(11), dp(11), paint);
-            canvas.drawOval(new RectF(left, vesselTop, right, vesselTop + dp(12)), paint);
-            canvas.drawOval(new RectF(left, vesselBottom - dp(12), right, vesselBottom), paint);
-            paint.setStrokeWidth(dp(1));
-            canvas.drawLine(inside.left, Math.max(inside.top, liquidY), inside.right, Math.max(inside.top, liquidY), paint);
-            paint.setStyle(Paint.Style.FILL);
-            paint.setTextSize(dp(7));
-            paint.setColor(inletColor);
-            canvas.drawText("NIVEL", left + dp(4), Math.max(inside.top + dp(10), liquidY - dp(3)), paint);
-
-            float coilRadius = (float) coilD * scale / 2;
-            float tubeRadius = (float) tubeD * scale / 2;
-            float coilBottom = inside.bottom - tubeRadius - (float) tubeD * scale;
-            float coilTop = coilBottom - (float) coilH * scale;
-            int steps = Math.max(80, Math.min(2400, (int) Math.ceil(turns * 90)));
-            coilPath.reset();
-            for (int i = 0; i <= steps; i++) {
-                float fraction = i / (float) steps;
-                double theta = Math.PI * 2 * turns * fraction;
-                float x = (float) (left + tankPxW / 2 + coilRadius * Math.cos(theta));
-                float y = coilBottom - fraction * (float) coilH * scale;
-                if (i == 0) coilPath.moveTo(x, y); else coilPath.lineTo(x, y);
-            }
-            float tubeStroke = Math.max(dp(2), (float) tubeD * scale);
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeCap(Paint.Cap.ROUND);
-            paint.setStrokeJoin(Paint.Join.ROUND);
-            paint.setColor(INK);
-            paint.setStrokeWidth(tubeStroke + dp(2));
-            canvas.drawPath(coilPath, paint);
-            paint.setColor(TEAL);
-            paint.setStrokeWidth(tubeStroke);
-            canvas.drawPath(coilPath, paint);
-
-            float cx = left + tankPxW / 2;
-            float xStart = cx + coilRadius;
-            float xEnd = (float) (cx + coilRadius * Math.cos(Math.PI * 2 * turns));
-            drawFlowArrow(canvas, right - wall, coilBottom, xStart, coilBottom, inletColor);
-            float outletWall = xEnd >= cx ? right - wall : left + wall;
-            drawFlowArrow(canvas, xEnd, coilTop, outletWall, coilTop, MAGENTA);
-
-            float infoX = Math.min(width - dp(84), right + dp(10));
-            paint.setStyle(Paint.Style.FILL);
-            paint.setTypeface(monoTypeface);
-            paint.setTextSize(dp(8));
-            paint.setColor(INK);
-            float infoY = vesselTop + dp(22);
-            canvas.drawText("Dₕ " + f0(coilD * 1000) + " mm", infoX, infoY, paint);
-            canvas.drawText("N " + f(turns), infoX, infoY + dp(17), paint);
-            canvas.drawText("p " + f0(pitch * 1000) + " mm", infoX, infoY + dp(34), paint);
-            canvas.drawText("H " + f(coilH) + " m", infoX, infoY + dp(51), paint);
-            canvas.drawText("L " + f(schematicResults.get("tubeLength")) + " m", infoX, infoY + dp(68), paint);
-            canvas.drawText("Dₜ " + f0(tankD * 1000) + " mm", infoX, infoY + dp(85), paint);
-
-            paint.setColor(INK);
-            paint.setStrokeWidth(dp(1));
-            float dimensionY = vesselBottom + dp(8);
-            drawDimension(canvas, cx - coilRadius, dimensionY, cx + coilRadius, dimensionY, paint);
-            paint.setStyle(Paint.Style.FILL);
-            paint.setTextSize(dp(7));
-            String diameterLabel = "Diámetro de hélice = " + f0(coilD * 1000) + " mm";
-            float labelWidth = paint.measureText(diameterLabel);
-            canvas.drawText(diameterLabel, cx - labelWidth / 2, dimensionY + dp(10), paint);
-        }
-
-        private void drawFlowArrow(Canvas canvas, float x1, float y1, float x2, float y2, int color) {
-            paint.setStyle(Paint.Style.STROKE);
-            paint.setStrokeWidth(dp(2));
-            paint.setStrokeCap(Paint.Cap.ROUND);
-            paint.setColor(color);
-            canvas.drawLine(x1, y1, x2, y2, paint);
-            float angle = (float) Math.atan2(y2 - y1, x2 - x1);
-            float size = dp(5);
-            Path arrow = new Path();
-            arrow.moveTo(x2, y2);
-            arrow.lineTo((float) (x2 - size * Math.cos(angle - .55)), (float) (y2 - size * Math.sin(angle - .55)));
-            arrow.lineTo((float) (x2 - size * Math.cos(angle + .55)), (float) (y2 - size * Math.sin(angle + .55)));
-            arrow.close();
-            paint.setStyle(Paint.Style.FILL);
-            canvas.drawPath(arrow, paint);
-        }
-
-        private void drawDimension(Canvas canvas, float x1, float y1, float x2, float y2, Paint p) {
-            p.setStyle(Paint.Style.STROKE);
-            canvas.drawLine(x1, y1, x2, y2, p);
-            float a = dp(4);
-            canvas.drawLine(x1, y1, x1 + a, y1 - a, p);
-            canvas.drawLine(x1, y1, x1 + a, y1 + a, p);
-            canvas.drawLine(x2, y2, x2 - a, y2 - a, p);
-            canvas.drawLine(x2, y2, x2 - a, y2 + a, p);
-        }
-    }
-
     private String groupNote(String group) {
         if (group.equals("Calor metabólico y biomasa")) return "Calor volumétrico y potencia disipada";
         if (group.equals("Temperaturas del proceso")) return "Fuerza impulsora y capacidad de refrigeración";
@@ -1005,7 +832,6 @@ public class MainActivity extends Activity {
 
     private void calculate(boolean notify) {
         values.clear();
-        schematicResults.clear();
         try {
             for (Spec spec : specs) {
                 String raw = editors.get(spec.key).getText().toString().trim().replace(',', '.');
@@ -1024,7 +850,6 @@ public class MainActivity extends Activity {
             resultRows.removeAllViews();
             if (calculatorSummaryGrid != null) calculatorSummaryGrid.removeAllViews();
             if (flowWarningText != null) flowWarningText.setVisibility(View.GONE);
-            if (coilDiagram != null) coilDiagram.invalidate();
             if (notify) Toast.makeText(this, ex.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
@@ -1082,15 +907,6 @@ public class MainActivity extends Activity {
         double liquidHeight = get(v, "volume") / (Math.PI * tankD * tankD / 4);
         double assumedAxialClearance = doM;
         boolean heightFit = height + doM + assumedAxialClearance <= liquidHeight;
-        schematicResults.put("coilDiameter", coilD);
-        schematicResults.put("tubeDiameter", doM);
-        schematicResults.put("tankDiameter", tankD);
-        schematicResults.put("tankHeight", tankH);
-        schematicResults.put("liquidHeight", liquidHeight);
-        schematicResults.put("pitch", pitch);
-        schematicResults.put("turns", turns);
-        schematicResults.put("coilHeight", height);
-        schematicResults.put("tubeLength", length);
         Map<String, String> out = new LinkedHashMap<>();
         out.put("Carga metabólica", f(qReaction) + " kW");
         out.put("Carga térmica total", f(qTotal) + " kW");
@@ -1187,7 +1003,6 @@ public class MainActivity extends Activity {
         flowWarningText.setText(message);
         flowWarningText.setBackground(rounded(caution ? YELLOW : TEAL, 0, INK));
         flowWarningText.setVisibility(View.VISIBLE);
-        if (coilDiagram != null) coilDiagram.invalidate();
         resultRows.removeAllViews();
         for (Map.Entry<String, String> entry : result.entrySet()) {
             LinearLayout line = new LinearLayout(this);
