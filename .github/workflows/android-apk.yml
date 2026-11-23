@@ -42,6 +42,46 @@ jobs:
       - name: Name installable APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk android/app/build/outputs/apk/debug/ThermaBio-Android.apk
 
+      - name: Verify app startup and lazy WebViews on Android 16
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 36
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: |
+            set -euo pipefail
+            adb install -r android/app/build/outputs/apk/debug/ThermaBio-Android.apk
+            adb logcat -c
+            adb shell am start -W -n com.thermabio.app/.MainActivity
+            sleep 8
+            assert_app_alive() {
+              adb shell pidof -s com.thermabio.app >/dev/null || { adb logcat -d -s AndroidRuntime:E; exit 1; }
+              if adb logcat -d -s AndroidRuntime:E | grep -E 'FATAL EXCEPTION|Process: com\.thermabio\.app'; then
+                echo "ThermaBio crashed on Android 16."
+                exit 1
+              fi
+            }
+            tap_tab() {
+              local label="$1"
+              adb shell uiautomator dump /sdcard/window.xml >/dev/null 2>&1
+              local bounds
+              bounds="$(adb exec-out cat /sdcard/window.xml | python3 -c 'import re,sys,xml.etree.ElementTree as E; label=sys.argv[1]; root=E.fromstring(sys.stdin.buffer.read()); n=next((n for n in root.iter("node") if label in (n.attrib.get("text", "") + " " + n.attrib.get("content-desc", "")) and n.attrib.get("clickable") == "true"),None); m=None if n is None else re.search(r"\[(\d+),(\d+)\]\[(\d+),(\d+)\]",n.attrib["bounds"]); print("" if m is None else f"{(int(m[1])+int(m[3]))//2} {(int(m[2])+int(m[4]))//2}")' "$label")"
+              if [ -z "$bounds" ]; then
+                echo "Could not find the $label navigation tab."
+                exit 1
+              fi
+              read -r x y <<< "$bounds"
+              adb shell input tap "$x" "$y"
+              sleep 6
+              assert_app_alive
+            }
+            assert_app_alive
+            tap_tab RESULTADOS
+            tap_tab 'MODELO 3D'
+
       - name: Save APK build artifact
         uses: actions/upload-artifact@v4
         with:
