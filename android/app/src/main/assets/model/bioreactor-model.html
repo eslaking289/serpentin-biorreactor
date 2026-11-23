@@ -12,14 +12,14 @@
   --anatomy-lift:inset 0 1px 0 0 #ffffff0a,inset 0 0 0 1px #ffffff06,0 0 0 1px #00000026,0 1px 1px -.5px #00000014,0 3px 3px -1.5px #00000014,0 6px 6px -3px #00000014,0 12px 12px -6px #00000014;
 }
 .iso[data-theme="light"]{
-  --anatomy-page:#f2f2ef;--anatomy-card:#fbfbfa;--anatomy-text:#57575a;--anatomy-strong:#18181a;--anatomy-muted:#8c8c90;
-  --anatomy-paper:#fbfbfa;--anatomy-face:#ffffff;--anatomy-top:#ffffff;
-  --anatomy-shade-0:#dcdcd9;--anatomy-shade-1:#e5e5e2;--anatomy-shade-2:#ededea;--anatomy-shade-3:#f4f4f1;
-  --anatomy-lit-top:#ffffff;--anatomy-lit-shade:#eeeeeb;
-  --anatomy-hi:#26262a;--anatomy-mid:#8a8a8f;--anatomy-lo:#b4b4b8;--anatomy-faint:#d4d4d6;--anatomy-lit:#000000;
-  --anatomy-halo:#8a8a80;--anatomy-halo-opacity:.32;--anatomy-dot:#3a3a3e;
-  --anatomy-red:#e5484d;--anatomy-green:#30a46c;--anatomy-blue:#3e63dd;
-  --anatomy-lift:inset 0 1px 0 0 #ffffff,0 0 0 1px #0000000f,0 1px 1px -.5px #0000000a,0 3px 3px -1.5px #0000000a,0 6px 6px -3px #0000000a,0 12px 12px -6px #0000000a;
+  --anatomy-page:#fcfae3;--anatomy-card:#fffef7;--anatomy-text:#111111;--anatomy-strong:#111111;--anatomy-muted:#3c494a;
+  --anatomy-paper:#fffef7;--anatomy-face:#fffef7;--anatomy-top:#f5f3dc;
+  --anatomy-shade-0:#d9d9cc;--anatomy-shade-1:#e4e3d6;--anatomy-shade-2:#eeeddf;--anatomy-shade-3:#f5f3e8;
+  --anatomy-lit-top:#ffffff;--anatomy-lit-shade:#e8f7f5;
+  --anatomy-hi:#111111;--anatomy-mid:#5e6969;--anatomy-lo:#85908f;--anatomy-faint:#dedecf;--anatomy-lit:#00aab0;
+  --anatomy-halo:#54584d;--anatomy-halo-opacity:.22;--anatomy-dot:#00aab0;
+  --anatomy-red:#e600a9;--anatomy-green:#138779;--anatomy-blue:#008eae;
+  --anatomy-lift:inset 0 1px 0 0 #ffffff,0 0 0 1px #00000018,0 2px 0 #000000;
 }
 .iso-svg{display:block;width:100%;height:auto;overflow:visible}
 .iso-svg path,.iso-svg circle{vector-effect:non-scaling-stroke}
@@ -110,13 +110,13 @@
 html{color-scheme:dark}body[data-theme="light"]{color-scheme:light}
 body{margin:0;background:var(--anatomy-page);color:var(--anatomy-text);font:14px/1.5 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
 .iso{--acc:#f5a524;--bx-edge:#0a0c0f;--bx-steel:#8793a1;--bx-shine:#e3eaf2;--bx-medium:#fb923c}
-.iso[data-theme="light"]{--acc:#d97706;--bx-edge:#3b4148;--bx-steel:#c3cad3;--bx-shine:#ffffff}
+.iso[data-theme="light"]{--acc:#00aab0;--bx-edge:#111111;--bx-steel:#849397;--bx-shine:#ffffff;--bx-medium:#ff00aa}
 button{font:inherit;color:inherit}
 .app{max-width:1180px;margin:0 auto;padding:10px 12px 40px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 2px 10px}
 .top h1{font-size:16px;margin:0;color:var(--anatomy-strong);font-weight:600;letter-spacing:.01em}
 .top p{margin:0;font-size:12px;color:var(--anatomy-muted)}
-.btn{background:transparent;border:1px solid var(--anatomy-lo);border-radius:6px;padding:7px 11px;min-height:36px;cursor:pointer;font-size:12.5px}
+.btn{background:var(--anatomy-card);border:1px solid var(--anatomy-lo);border-radius:3px;padding:7px 11px;min-height:36px;cursor:pointer;font-size:12.5px;box-shadow:0 2px 0 #111}
 .btn[aria-pressed="true"]{border-color:var(--acc);color:var(--anatomy-strong)}
 .layout{display:grid;gap:14px}.layout>*{min-width:0}
 @media(min-width:980px){.layout{grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);align-items:start}.stage{position:sticky;top:10px}}

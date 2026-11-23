@@ -80,9 +80,12 @@ public class MainActivity extends Activity {
     private final Button[] navigationButtons = new Button[4];
     private final int[] navigationAccents = {TEAL, YELLOW, MAGENTA, TEAL};
     private TextView statusText;
-    private WebView reactorDiagram;
     private WebView fullIndexWebView;
-    private boolean reactorDiagramReady;
+    private boolean fullIndexReady;
+    private boolean fullIndexLoaded;
+    private boolean fullIndexPreviewMode;
+    private FrameLayout modelPreviewFrame;
+    private FrameLayout modelFullFrame;
     private ScrollView scrollView;
     private FrameLayout root;
     private LinearLayout calculatorScreen;
@@ -507,7 +510,7 @@ public class MainActivity extends Activity {
         tag.setPadding(dp(8), dp(6), dp(8), dp(6));
         module.addView(tag, margins(0, 0, 0, 8));
         module.addView(coilSchematic());
-        Button explore = smallButton("ABRIR MODELO INTERACTIVO DEL INDEX");
+        Button explore = smallButton("EXPLORAR MODELO 3D  →");
         explore.setBackground(projected(TEAL));
         explore.setOnClickListener(v -> showScreen(3));
         module.addView(explore, margins(0, 8, 0, 0));
@@ -572,6 +575,8 @@ public class MainActivity extends Activity {
             target.animate().alpha(1f).setDuration(150).start();
         }).start();
         currentScreen = screenIndex;
+        if (screenIndex == 1) showModelIn(modelPreviewFrame, true);
+        if (screenIndex == 3) showModelIn(modelFullFrame, false);
         for (int i = 0; i < navigationButtons.length; i++) {
             if (navigationButtons[i] != null) {
                 navigationButtons[i].setBackground(projected(i == screenIndex ? navigationAccents[i] : Color.WHITE));
@@ -588,8 +593,19 @@ public class MainActivity extends Activity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void addFullIndexScreen(LinearLayout parent) {
+        addScreenHeader(parent, "MODELO 3D DEL BIORREACTOR", "COMPONENTES  ·  PARÁMETROS  ·  CÁLCULOS");
+        modelFullFrame = new FrameLayout(this);
+        modelFullFrame.setBackgroundColor(BG);
+        float density = getResources().getDisplayMetrics().density;
+        int viewportHeight = Math.round(getResources().getDisplayMetrics().heightPixels / density) - 220;
+        parent.addView(modelFullFrame, new LinearLayout.LayoutParams(-1, dp(Math.max(520, Math.min(760, viewportHeight)))));
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private void ensureModelWebView() {
+        if (fullIndexWebView != null) return;
         fullIndexWebView = new WebView(this);
-        fullIndexWebView.setBackgroundColor(Color.rgb(11, 11, 11));
+        fullIndexWebView.setBackgroundColor(BG);
         fullIndexWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         fullIndexWebView.setVerticalScrollBarEnabled(false);
         fullIndexWebView.setHorizontalScrollBarEnabled(false);
@@ -607,6 +623,11 @@ public class MainActivity extends Activity {
             settings.setMixedContentMode(android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW);
         }
         fullIndexWebView.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                fullIndexReady = true;
+                view.evaluateJavascript("(function(){document.body.dataset.theme='light';var s=document.createElement('style');s.textContent='.app{max-width:none;padding:8px 10px 20px}.layout{display:block}.stage{position:static}.embedded-preview .app{height:100%;padding:0}.embedded-preview .top,.embedded-preview .bar,.embedded-preview .tshow,.embedded-preview .side,.embedded-preview .iso-legend{display:none!important}.embedded-preview .layout,.embedded-preview .stage,.embedded-preview .iso-figure,.embedded-preview .iso-plate.stagecard,#fig{height:100%;margin:0}.embedded-preview .iso-plate.stagecard{padding:30px 8px}.embedded-preview #svg{height:100%;max-height:100%;width:100%}';document.head.appendChild(s);document.body.classList.toggle('embedded-preview'," + fullIndexPreviewMode + ");var p=document.getElementById('btnPause');if(p&&p.getAttribute('aria-pressed')!=='true')p.click();})()", null);
+                updateIntegratedModel();
+            }
             @Override public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
                 return !"file:///android_asset/index.html".equals(request.getUrl().toString());
             }
@@ -615,44 +636,37 @@ public class MainActivity extends Activity {
                 return !"file:///android_asset/index.html".equals(url);
             }
         });
-        parent.addView(fullIndexWebView, new LinearLayout.LayoutParams(-1, dp(720)));
-        fullIndexWebView.loadUrl("file:///android_asset/index.html");
+    }
+
+    private void showModelIn(FrameLayout target, boolean preview) {
+        if (target == null) return;
+        ensureModelWebView();
+        fullIndexPreviewMode = preview;
+        android.view.ViewParent oldParent = fullIndexWebView.getParent();
+        if (oldParent instanceof android.view.ViewGroup) ((android.view.ViewGroup) oldParent).removeView(fullIndexWebView);
+        target.removeAllViews();
+        target.addView(fullIndexWebView, new FrameLayout.LayoutParams(-1, -1));
+        if (fullIndexReady) {
+            fullIndexWebView.evaluateJavascript("(function(){if(" + preview + ")document.body.dataset.theme='light';document.body.classList.toggle('embedded-preview'," + preview + ");window.scrollTo(0,0);})()", null);
+        }
+        if (!fullIndexLoaded) {
+            fullIndexLoaded = true;
+            fullIndexWebView.loadUrl("file:///android_asset/index.html");
+        }
     }
 
     private View coilSchematic() {
-        FrameLayout frame = new FrameLayout(this);
-        frame.setBackground(rounded(Color.WHITE, 0, INK));
-        reactorDiagram = new WebView(this);
-        reactorDiagram.setBackgroundColor(Color.TRANSPARENT);
-        reactorDiagram.setVerticalScrollBarEnabled(false);
-        reactorDiagram.setHorizontalScrollBarEnabled(false);
-        reactorDiagram.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        reactorDiagram.setLayerType(View.LAYER_TYPE_HARDWARE, null);
-        android.webkit.WebSettings settings = reactorDiagram.getSettings();
-        settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(false);
-        settings.setAllowFileAccess(true);
-        settings.setAllowContentAccess(false);
-        settings.setBlockNetworkLoads(true);
-        settings.setJavaScriptCanOpenWindowsAutomatically(false);
-        settings.setSupportZoom(false);
-        reactorDiagram.setWebViewClient(new WebViewClient() {
-            @Override public void onPageFinished(WebView view, String url) {
-                reactorDiagramReady = true;
-                view.evaluateJavascript("(function(){document.body.dataset.theme='light';var p=document.getElementById('btnPause');if(p&&p.getAttribute('aria-pressed')!=='true')p.click();})()", null);
-                updateReactorDiagram();
-            }
-        });
+        modelPreviewFrame = new FrameLayout(this);
+        modelPreviewFrame.setBackground(rounded(Color.WHITE, 0, INK));
         float density = getResources().getDisplayMetrics().density;
         int screenWidthDp = Math.round(getResources().getDisplayMetrics().widthPixels / density);
         int diagramHeight = Math.min(420, Math.round((screenWidthDp - 52) * 470f / 620f + 58));
-        frame.addView(reactorDiagram, new FrameLayout.LayoutParams(-1, dp(diagramHeight)));
-        reactorDiagram.loadUrl("file:///android_asset/model/bioreactor-model.html");
-        return frame;
+        modelPreviewFrame.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(diagramHeight)));
+        return modelPreviewFrame;
     }
 
-    private void updateReactorDiagram() {
-        if (reactorDiagram == null || !reactorDiagramReady || schematicResults.isEmpty()) return;
+    private void updateIntegratedModel() {
+        if (schematicResults.isEmpty()) return;
         double broth = schematicResults.get("brothTemperature");
         double safeTarget = broth - Math.max(1.0, Math.abs(broth) * 0.01);
         String params = "{"
@@ -669,7 +683,9 @@ public class MainActivity extends Activity {
                 + "Tout:" + jsNumber(get(schematicResults, "outletTemperature")) + ","
                 + "caudal:" + jsNumber(get(schematicResults, "flowLpm")) + ","
                 + "U:" + jsNumber(get(schematicResults, "overallU")) + "}";
-        reactorDiagram.evaluateJavascript("window.BiorreactorApp&&window.BiorreactorApp.setParametrosIlustracion(" + params + ")", null);
+        if (fullIndexWebView != null && fullIndexReady) {
+            fullIndexWebView.evaluateJavascript("window.BiorreactorApp&&window.BiorreactorApp.setParametrosIlustracion(" + params + ")", null);
+        }
     }
 
     private String jsNumber(double value) {
@@ -860,7 +876,7 @@ public class MainActivity extends Activity {
             resultRows.removeAllViews();
             if (calculatorSummaryGrid != null) calculatorSummaryGrid.removeAllViews();
             if (flowWarningText != null) flowWarningText.setVisibility(View.GONE);
-            updateReactorDiagram();
+            updateIntegratedModel();
             if (notify) Toast.makeText(this, ex.getMessage(), Toast.LENGTH_LONG).show();
         }
     }
@@ -1003,7 +1019,7 @@ public class MainActivity extends Activity {
 
     private void renderResults(Map<String, String> result) {
         resultValues.clear(); resultValues.putAll(result);
-        updateReactorDiagram();
+        updateIntegratedModel();
         statusText.setText("Actualizado en vivo · cálculo ejecutado en este teléfono");
         statusText.setTextColor(INK);
         summaryGrid.removeAllViews(); resultRows.removeAllViews(); calculatorSummaryGrid.removeAllViews();

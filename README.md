@@ -2,9 +2,9 @@
 
 Aplicación Android que empaqueta la interfaz interactiva del biorreactor en un APK instalable. La interfaz se ejecuta desde archivos locales.
 
-**Descarga:** [ThermaBio Android 1.6.1](https://github.com/eslaking289/serpentin-biorreactor/releases/download/apk-v1.6.1/ThermaBio-Android.apk)
+**Descarga:** [ThermaBio Android 1.6.4](https://github.com/eslaking289/serpentin-biorreactor/releases/download/apk-v1.6.4/ThermaBio-Android.apk)
 
-La APK une las pantallas nativas de ThermaBio (calculadora metabólica con despejes, resultados y metodología) con el `index.html` original como sección **Modelo 3D**. En Resultados se conserva el diagrama sincronizado con las entradas nativas; en Modelo 3D están disponibles también los controles, parámetros y cálculos propios del HTML. Ambas partes se cargan desde recursos locales dentro de la misma app, sin navegador externo ni permiso de Internet.
+La APK une las pantallas de ThermaBio (calculadora metabólica con despejes, resultados y metodología) con el modelo 3D interactivo. Resultados y Modelo 3D comparten la misma vista y los resultados nativos actualizan su geometría y condiciones térmicas. El modelo mantiene sus controles de componentes, vistas, parámetros y cálculos. La vista se carga cuando se abre por primera vez; la app funciona desde recursos locales, sin navegador externo ni permiso de Internet.
 
 ## Instalar
 
