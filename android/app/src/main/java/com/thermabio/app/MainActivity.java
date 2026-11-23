@@ -82,6 +82,8 @@ public class MainActivity extends Activity {
     private TextView statusText;
     private WebView reactorDiagram;
     private WebView fullIndexWebView;
+    private FrameLayout reactorDiagramContainer;
+    private FrameLayout fullIndexContainer;
     private boolean reactorDiagramReady;
     private boolean fullIndexReady;
     private ScrollView scrollView;
@@ -559,6 +561,8 @@ public class MainActivity extends Activity {
 
     private void showScreen(int screenIndex) {
         if (screenIndex < 0 || screenIndex > 3) return;
+        if (screenIndex == 1) loadReactorDiagram();
+        if (screenIndex == 3) loadFullIndex();
         LinearLayout target = screenFor(screenIndex);
         LinearLayout current = screenFor(currentScreen);
         if (current == target) {
@@ -590,6 +594,14 @@ public class MainActivity extends Activity {
     @SuppressLint("SetJavaScriptEnabled")
     private void addFullIndexScreen(LinearLayout parent) {
         addScreenHeader(parent, "GEMELO DIGITAL 3D", "MODELADO PARAMÉTRICO DEL BIORREACTOR");
+        fullIndexContainer = new FrameLayout(this);
+        fullIndexContainer.setBackgroundColor(BG);
+        parent.addView(fullIndexContainer, new LinearLayout.LayoutParams(-1, dp(980)));
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private void loadFullIndex() {
+        if (fullIndexWebView != null || fullIndexContainer == null) return;
         fullIndexWebView = new WebView(this);
         fullIndexWebView.setBackgroundColor(BG);
         fullIndexWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -614,13 +626,20 @@ public class MainActivity extends Activity {
                 updateReactorDiagram();
             }
         });
-        parent.addView(fullIndexWebView, new LinearLayout.LayoutParams(-1, dp(980)));
+        fullIndexContainer.addView(fullIndexWebView, new FrameLayout.LayoutParams(-1, -1));
         fullIndexWebView.loadUrl("file:///android_asset/model/bioreactor-model.html");
     }
 
     private View coilSchematic() {
         FrameLayout frame = new FrameLayout(this);
         frame.setBackground(rounded(Color.WHITE, 0, INK));
+        reactorDiagramContainer = frame;
+        return frame;
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private void loadReactorDiagram() {
+        if (reactorDiagram != null || reactorDiagramContainer == null) return;
         reactorDiagram = new WebView(this);
         reactorDiagram.setBackgroundColor(Color.TRANSPARENT);
         reactorDiagram.setVerticalScrollBarEnabled(false);
@@ -644,9 +663,8 @@ public class MainActivity extends Activity {
         float density = getResources().getDisplayMetrics().density;
         int screenWidthDp = Math.round(getResources().getDisplayMetrics().widthPixels / density);
         int diagramHeight = Math.min(420, Math.round((screenWidthDp - 52) * 470f / 620f + 58));
-        frame.addView(reactorDiagram, new FrameLayout.LayoutParams(-1, dp(diagramHeight)));
+        reactorDiagramContainer.addView(reactorDiagram, new FrameLayout.LayoutParams(-1, dp(diagramHeight)));
         reactorDiagram.loadUrl("file:///android_asset/model/bioreactor-model.html");
-        return frame;
     }
 
     private void updateReactorDiagram() {
