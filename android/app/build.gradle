@@ -10,8 +10,8 @@ android {
         applicationId 'com.thermabio.app'
         minSdk 23
         targetSdk 35
-        versionCode 16
-        versionName '1.5.8'
+        versionCode 18
+        versionName '1.6.0'
     }
 
     compileOptions {

@@ -1,10 +1,10 @@
 # ThermaBio Android
 
-Aplicación Android para el balance térmico de fermentación y el dimensionamiento preliminar de un serpentín de enfriamiento. Este repositorio mantiene la versión APK; la antigua aplicación web independiente se retiró.
+Aplicación Android que empaqueta la interfaz interactiva del biorreactor en un APK instalable. La interfaz se ejecuta desde archivos locales.
 
-**Descarga:** [ThermaBio Android 1.5.8](https://github.com/eslaking289/serpentin-biorreactor/raw/refs/heads/main/android/dist/ThermaBio-Android-1.5.8.apk)
+**Descarga:** [ThermaBio Android 1.6.0](https://github.com/eslaking289/serpentin-biorreactor/raw/refs/heads/main/android/dist/ThermaBio-Android-1.6.0.apk)
 
-La APK calcula el balance metabólico (`Q̇ = q̇_met · V_caldo + P_agitación`), el deber de enfriamiento, la transferencia térmica, la geometría helicoidal y una estimación de caída de presión. En Resultados muestra el modelo 3D local del biorreactor, basado en el archivo HTML incluido en los recursos de la APK, con dimensiones sincronizadas con el cálculo nativo. La aplicación no solicita permiso de Internet.
+La APK muestra el archivo `index.html` completo como interfaz principal: modelo 3D interactivo, selección de componentes, parámetros editables, modos de vista, control de animación y cálculos propios del HTML. El archivo original se conserva dentro del APK y se carga en una vista Android local; no se abre un navegador externo ni se necesitan recursos de Internet. La app no solicita permiso de Internet.
 
 ## Instalar
 
@@ -21,20 +21,18 @@ cd android
 gradle --offline --no-daemon assembleDebug
 ```
 
-El resultado se crea en `android/app/build/outputs/apk/debug/app-debug.apk`. El APK firmado de la carpeta `android/dist/` permite instalación directa; usa una clave de firma propia para publicar en Google Play.
+El resultado se crea en `android/app/build/outputs/apk/debug/app-debug.apk`. La carpeta `android/dist/` contiene el APK instalable de esta versión.
 
 ## Alcance y supuestos
 
-El modelo es educativo y preliminar, no es un plano de fabricación ni una herramienta de selección de bomba. Supone caldo isotermo, propiedades constantes y pérdidas al ambiente nulas. La transferencia interna usa Gnielinski con corrección helicoidal simplificada; en régimen laminar se conserva Nu = 3.66 de tubo recto y se advierte que no corrige el efecto Dean. La caída de presión es Darcy–Weisbach de tubo recto equivalente y no incluye curvatura ni accesorios.
-
-Consulta [`android/BIORREACTOR.md`](android/BIORREACTOR.md) para los detalles del diagrama. Las correlaciones y propiedades deben validarse para el equipo y proceso reales.
+El cálculo incluido en `index.html` estima enfriamiento sensible: trata cultivo y refrigerante como agua, usa un coeficiente global `U` ingresado por el usuario y compara la potencia transferida con la absorbida por el refrigerante. No calcula generación metabólica ni calor de agitación. Es una herramienta académica preliminar, no un plano de fabricación ni una selección de bomba. Consulta [`android/BIORREACTOR.md`](android/BIORREACTOR.md) para las ecuaciones y límites.
 
 ## Verificación matemática
 
-El motor numérico de referencia se puede comprobar con Node.js:
+Los módulos numéricos de referencia que conserva el repositorio se pueden comprobar con Node.js:
 
 ```powershell
 node test/verify.js
 ```
 
-El código de la aplicación está en `android/app/`. La interfaz, los despejes metabólicos y el diagrama paramétrico están implementados nativamente en Android; el repositorio ya no contiene páginas HTML ni vistas WebView.
+El código de la aplicación está en `android/app/`. La interfaz se conserva en `android/app/src/main/assets/index.html`; `MainActivity.java` la abre dentro de una vista WebView local con la carga de red bloqueada.
