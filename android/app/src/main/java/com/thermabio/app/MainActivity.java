@@ -25,6 +25,7 @@ import android.text.TextWatcher;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.SubscriptSpan;
 import android.text.style.SuperscriptSpan;
+import android.annotation.SuppressLint;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
@@ -33,11 +34,11 @@ import android.content.Context;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
-import android.widget.HorizontalScrollView;
-import android.widget.SeekBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -79,13 +80,12 @@ public class MainActivity extends Activity {
     private final Button[] navigationButtons = new Button[4];
     private final int[] navigationAccents = {TEAL, YELLOW, MAGENTA, TEAL};
     private TextView statusText;
-    private BioreactorModelView modelView;
+    private WebView modelWebView;
+    private boolean modelWebViewLoaded;
+    private boolean modelWebViewReady;
+    private boolean modelPreviewMode;
     private FrameLayout modelPreviewFrame;
     private FrameLayout modelFullFrame;
-    private TextView modelInfoText;
-    private TextView modelTemperatureText;
-    private boolean modelLabels = true;
-    private boolean modelSpinning;
     private ScrollView scrollView;
     private FrameLayout root;
     private LinearLayout calculatorScreen;
@@ -592,103 +592,81 @@ public class MainActivity extends Activity {
 
     private void addFullIndexScreen(LinearLayout parent) {
         addScreenHeader(parent, "MODELO 3D DEL BIORREACTOR", "COMPONENTES  ·  PARÁMETROS  ·  CÁLCULOS");
-        LinearLayout modes = new LinearLayout(this);
-        modes.setOrientation(LinearLayout.HORIZONTAL);
-        String[] modeNames = {"CORTE", "TRANSPARENTE", "CERRADO"};
-        int[] modeColors = {TEAL, YELLOW, MAGENTA};
-        for (int i = 0; i < modeNames.length; i++) {
-            final int mode = i;
-            Button button = smallButton(modeNames[i]);
-            button.setBackground(projected(modeColors[i]));
-            button.setOnClickListener(v -> { ensureModelView(); modelView.setViewMode(mode); });
-            LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(0, dp(42), 1f);
-            bp.setMargins(dp(3), 0, dp(3), dp(8));
-            modes.addView(button, bp);
-        }
-        parent.addView(modes);
-
-        LinearLayout actions = new LinearLayout(this);
-        actions.setOrientation(LinearLayout.HORIZONTAL);
-        Button labels = smallButton("ETIQUETAS  ✓");
-        labels.setOnClickListener(v -> {
-            modelLabels = !modelLabels;
-            labels.setText(modelLabels ? "ETIQUETAS  ✓" : "ETIQUETAS  —");
-            ensureModelView(); modelView.setLabels(modelLabels);
-        });
-        actions.addView(labels, new LinearLayout.LayoutParams(0, dp(40), 1f));
-        Button spin = smallButton("⟳  GIRAR");
-        spin.setOnClickListener(v -> {
-            modelSpinning = !modelSpinning;
-            spin.setText(modelSpinning ? "Ⅱ  PAUSAR" : "⟳  GIRAR");
-            ensureModelView(); modelView.setSpinning(modelSpinning);
-        });
-        LinearLayout.LayoutParams spinParams = new LinearLayout.LayoutParams(0, dp(40), 1f);
-        spinParams.setMargins(dp(8), 0, 0, 0);
-        actions.addView(spin, spinParams);
-        parent.addView(actions, margins(0, 0, 0, 8));
-
-        LinearLayout tempRow = new LinearLayout(this);
-        tempRow.setGravity(Gravity.CENTER_VERTICAL);
-        modelTemperatureText = text("TEMPERATURA VISUALIZADA  ·  37 °C", 10, INK, true);
-        tempRow.addView(modelTemperatureText, new LinearLayout.LayoutParams(dp(190), -2));
-        SeekBar temperature = new SeekBar(this);
-        temperature.setMax(850);
-        temperature.setProgress(420);
-        tempRow.addView(temperature, new LinearLayout.LayoutParams(0, dp(38), 1f));
-        temperature.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            @Override public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                float c = -5f + progress / 10f;
-                modelTemperatureText.setText(String.format(Locale.getDefault(), "TEMPERATURA VISUALIZADA  ·  %.1f °C", c));
-                ensureModelView(); modelView.setDisplayTemperature(c);
-            }
-            @Override public void onStartTrackingTouch(SeekBar seekBar) { }
-            @Override public void onStopTrackingTouch(SeekBar seekBar) { }
-        });
-        parent.addView(tempRow, margins(0, 0, 0, 4));
-
         modelFullFrame = new FrameLayout(this);
-        modelFullFrame.setBackground(rounded(Color.WHITE, 0, INK));
+        modelFullFrame.setBackground(rounded(BG, 0, INK));
         float density = getResources().getDisplayMetrics().density;
         int viewportHeight = Math.round(getResources().getDisplayMetrics().heightPixels / density) - 220;
-        parent.addView(modelFullFrame, new LinearLayout.LayoutParams(-1, dp(Math.max(410, Math.min(650, viewportHeight)))));
-
-        HorizontalScrollView partsScroll = new HorizontalScrollView(this);
-        partsScroll.setHorizontalScrollBarEnabled(false);
-        LinearLayout parts = new LinearLayout(this);
-        parts.setOrientation(LinearLayout.HORIZONTAL);
-        String[] partNames = {"Tanque", "Tapa y motor", "Serpentín", "Impulsores", "Deflectores", "Sensores"};
-        for (String part : partNames) {
-            Button chip = smallButton(part.toUpperCase(Locale.ROOT));
-            chip.setOnClickListener(v -> { ensureModelView(); modelView.selectPart(part); });
-            LinearLayout.LayoutParams cp = new LinearLayout.LayoutParams(-2, dp(38));
-            cp.setMargins(0, 0, dp(7), 0);
-            parts.addView(chip, cp);
-        }
-        partsScroll.addView(parts);
-        parent.addView(partsScroll, margins(0, 10, 0, 8));
-        modelInfoText = text("ARRASTRA EL MODELO PARA GIRARLO O SELECCIONA UN COMPONENTE.", 12, INK, true);
-        modelInfoText.setPadding(dp(12), dp(11), dp(12), dp(11));
-        modelInfoText.setBackground(rounded(Color.WHITE, 0, INK));
-        parent.addView(modelInfoText, margins(0, 0, 0, 14));
+        parent.addView(modelFullFrame, new LinearLayout.LayoutParams(-1, dp(Math.max(640, Math.min(900, viewportHeight)))));
     }
 
-    private void ensureModelView() {
-        if (modelView != null) return;
-        modelView = new BioreactorModelView(this);
-        modelView.setLabels(modelLabels);
-        modelView.setSpinning(modelSpinning);
-        modelView.setPartListener(this::updateModelInfo);
-        updateIntegratedModel();
+    @SuppressLint("SetJavaScriptEnabled")
+    private void ensureModelWebView() {
+        if (modelWebView != null) return;
+        modelWebView = new WebView(this);
+        modelWebView.setBackgroundColor(BG);
+        modelWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        modelWebView.setVerticalScrollBarEnabled(false);
+        modelWebView.setHorizontalScrollBarEnabled(false);
+        modelWebView.setNestedScrollingEnabled(false);
+        android.webkit.WebSettings settings = modelWebView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(false);
+        settings.setAllowFileAccess(true);
+        settings.setAllowContentAccess(false);
+        settings.setBlockNetworkLoads(true);
+        settings.setJavaScriptCanOpenWindowsAutomatically(false);
+        settings.setSupportMultipleWindows(false);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        modelWebView.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                modelWebViewReady = true;
+                applyModelContainerStyle();
+                updateIntegratedModel();
+            }
+            @Override public boolean shouldOverrideUrlLoading(WebView view, android.webkit.WebResourceRequest request) {
+                return !"file:///android_asset/index.html".equals(request.getUrl().toString());
+            }
+            @SuppressWarnings("deprecation")
+            @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                return !"file:///android_asset/index.html".equals(url);
+            }
+        });
     }
 
     private void showModelIn(FrameLayout target, boolean preview) {
         if (target == null) return;
-        ensureModelView();
-        android.view.ViewParent oldParent = modelView.getParent();
-        if (oldParent instanceof android.view.ViewGroup) ((android.view.ViewGroup) oldParent).removeView(modelView);
+        ensureModelWebView();
+        modelPreviewMode = preview;
+        android.view.ViewParent oldParent = modelWebView.getParent();
+        if (oldParent instanceof android.view.ViewGroup) ((android.view.ViewGroup) oldParent).removeView(modelWebView);
         target.removeAllViews();
-        target.addView(modelView, new FrameLayout.LayoutParams(-1, -1));
-        modelView.setLabels(preview ? false : modelLabels);
+        target.addView(modelWebView, new FrameLayout.LayoutParams(-1, -1));
+        if (modelWebViewReady) applyModelContainerStyle();
+        if (!modelWebViewLoaded) {
+            modelWebViewLoaded = true;
+            modelWebView.loadUrl("file:///android_asset/index.html");
+        }
+    }
+
+    private void applyModelContainerStyle() {
+        if (modelWebView == null || !modelWebViewReady) return;
+        String js = "(function(){if(!document.body)return;document.body.dataset.theme='light';"
+                + "var s=document.getElementById('thermabioNativeStyle');if(!s){s=document.createElement('style');"
+                + "s.id='thermabioNativeStyle';document.head.appendChild(s);}"
+                + "s.textContent='html,body{margin:0!important;background:#fcfae3!important}"
+                + ".app{max-width:none!important;padding:6px 8px 18px!important}"
+                + ".layout{display:block!important}.stage{position:static!important}"
+                + ".top{display:none!important}"
+                + ".native-preview .app{height:100%!important;padding:0!important}"
+                + ".native-preview .bar,.native-preview .tshow,.native-preview .side,.native-preview .iso-legend{display:none!important}"
+                + ".native-preview .layout,.native-preview .stage,.native-preview .iso-figure,.native-preview .stagecard,.native-preview #fig{height:100%!important;margin:0!important}"
+                + ".native-preview .stagecard{padding:4px!important;border:0!important;box-shadow:none!important}"
+                + ".native-preview #svg{height:100%!important;max-height:100%!important;width:100%!important}';"
+                + "document.body.classList.toggle('native-preview'," + modelPreviewMode + ");"
+                + "var p=document.getElementById('btnPause');if(" + modelPreviewMode + "&&p&&p.getAttribute('aria-pressed')!=='true')p.click();"
+                + "window.scrollTo(0,0);})()";
+        modelWebView.evaluateJavascript(js, null);
     }
 
     private View coilSchematic() {
@@ -703,29 +681,29 @@ public class MainActivity extends Activity {
 
     private void updateIntegratedModel() {
         if (schematicResults.isEmpty()) return;
-        if (modelView != null) {
-            modelView.setDesign(get(schematicResults, "tankDiameter"), get(schematicResults, "tankHeight"),
-                    get(schematicResults, "liquidHeight"), get(schematicResults, "coilDiameter"),
-                    get(schematicResults, "tubeDiameter"), get(schematicResults, "turns"),
-                    get(schematicResults, "pitch"), get(schematicResults, "brothTemperature"),
-                    get(schematicResults, "inletTemperature"), get(schematicResults, "outletTemperature"));
+        if (modelWebView != null && modelWebViewReady) {
+            double broth = schematicResults.get("brothTemperature");
+            double safeTarget = broth - Math.max(1.0, Math.abs(broth) * 0.01);
+            String params = "{"
+                    + "Vw:" + jsNumber(get(schematicResults, "liquidHeight") * Math.PI * Math.pow(get(schematicResults, "tankDiameter"), 2) / 4 * 1000) + ","
+                    + "Di:" + jsNumber(get(schematicResults, "tankDiameter") * 100) + ","
+                    + "Ht:" + jsNumber(get(schematicResults, "tankHeight") * 100) + ","
+                    + "De:" + jsNumber(get(schematicResults, "tubeDiameter") * 1000) + ","
+                    + "Dc:" + jsNumber(get(schematicResults, "coilDiameter") * 100) + ","
+                    + "N:" + jsNumber(get(schematicResults, "turns")) + ","
+                    + "L:" + jsNumber(get(schematicResults, "tubeLength")) + ","
+                    + "p:" + jsNumber(get(schematicResults, "pitch") * 100) + ","
+                    + "T0:" + jsNumber(broth) + ",Tobj:" + jsNumber(safeTarget) + ","
+                    + "Tin:" + jsNumber(get(schematicResults, "inletTemperature")) + ","
+                    + "Tout:" + jsNumber(get(schematicResults, "outletTemperature")) + ","
+                    + "caudal:" + jsNumber(get(schematicResults, "flowLpm")) + ","
+                    + "U:" + jsNumber(get(schematicResults, "overallU")) + "}";
+            modelWebView.evaluateJavascript("window.BiorreactorApp&&window.BiorreactorApp.setParametros(" + params + ")", null);
         }
     }
 
-    private void updateModelInfo(String part) {
-        if (modelInfoText == null) return;
-        if (schematicResults.isEmpty()) {
-            modelInfoText.setText("CALCULA EL DIMENSIONAMIENTO PARA VINCULAR LAS MEDIDAS DEL MODELO.");
-            return;
-        }
-        String detail;
-        if (part.contains("Serpentín")) detail = "SERPENTÍN · " + f(get(schematicResults, "turns")) + " vueltas · " + f(get(schematicResults, "tubeLength")) + " m · Ø exterior " + f(get(schematicResults, "tubeDiameter") * 1000) + " mm.";
-        else if (part.contains("Impulsor")) detail = "IMPULSORES · Mezclan el caldo y ayudan a transferir calor hacia el serpentín. Potencia de agitación: " + f(get(values, "agitation")) + " kW.";
-        else if (part.contains("Tapa") || part.contains("motor")) detail = "TAPA Y MOTOR · Cierre superior, soporte del eje, sensores y puertos del biorreactor.";
-        else if (part.contains("Deflectores")) detail = "DEFLECTORES · Reducen el giro del caldo y promueven mezcla radial.";
-        else if (part.contains("Sensor")) detail = "SENSORES · Referencia visual para medición de temperatura y condiciones del proceso.";
-        else detail = "TANQUE · Ø " + f(get(schematicResults, "tankDiameter") * 100) + " cm · nivel calculado " + f(get(schematicResults, "liquidHeight") * 100) + " cm · volumen " + f(get(values, "volume")) + " m³.";
-        modelInfoText.setText(detail.toUpperCase(Locale.ROOT));
+    private String jsNumber(double value) {
+        return Double.isFinite(value) ? String.format(Locale.US, "%.8f", value) : "0";
     }
 
     private String groupNote(String group) {
