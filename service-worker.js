@@ -1,4 +1,4 @@
-const CACHE_NAME = 'thermabio-v5';
+const CACHE_NAME = 'thermabio-v6';
 const APP_FILES = [
   './', './index.html', './balance-metabolico.html', './balance-metabolico-core.js', './metodologia.html', './styles.css', './core.js', './app.js',
   './manifest.webmanifest'

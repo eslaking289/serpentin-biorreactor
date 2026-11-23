@@ -1,6 +1,7 @@
 package com.thermabio.app;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.res.AssetFileDescriptor;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -86,12 +87,10 @@ public class MainActivity extends Activity {
     private final int[] navigationAccents = {TEAL, YELLOW, MAGENTA};
     private TextView statusText;
     private CoilDiagramView coilDiagram;
-    private WebView bioreactorWebView;
-    private Button bioreactorToggle;
-    private boolean bioreactorWebViewLoaded;
     private WebView metabolicBalanceWebView;
-    private Button metabolicBalanceToggle;
     private boolean metabolicBalanceWebViewLoaded;
+    private WebView bioreactorWebView;
+    private boolean bioreactorWebViewLoaded;
     private ScrollView scrollView;
     private FrameLayout root;
     private LinearLayout calculatorScreen;
@@ -224,6 +223,7 @@ public class MainActivity extends Activity {
                 fieldRow.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1));
             }
         }
+        addMetabolicBalanceCard(calculatorScreen);
 
         Button calculate = new Button(this);
         calculate.setText("⚡  CALCULAR DIMENSIONAMIENTO");
@@ -241,6 +241,7 @@ public class MainActivity extends Activity {
         page.addView(calculate, margins(0, 0, 0, 16));
 
         addScreenHeader(resultsScreen, "RESULTADOS TÉRMICOS Y MECÁNICOS", "SIMULACIÓN LOCAL  ·  ACTUALIZACIÓN EN VIVO");
+        addBioreactorResultsCard(resultsScreen);
         LinearLayout output = card();
         resultsScreen.addView(output, margins(0, 0, 0, 12));
         TextView resultsTitle = text("RESULTADOS DEL DISEÑO", 20, INK, true);
@@ -275,9 +276,6 @@ public class MainActivity extends Activity {
         Button editAgain = smallButton("Editar parámetros");
         editAgain.setOnClickListener(v -> showScreen(0));
         output.addView(editAgain, margins(0, 10, 0, 0));
-        addMetabolicBalanceCard(resultsScreen);
-        addBioreactorResultsCard(resultsScreen);
-
         addScreenHeader(methodologyScreen, "METODOLOGÍA Y ECUACIONES", "BASES Y CRITERIOS DE DIMENSIONAMIENTO");
         LinearLayout method = card();
         methodologyScreen.addView(method, margins(0, 0, 0, 14));
@@ -489,21 +487,17 @@ public class MainActivity extends Activity {
 
     private void addBioreactorResultsCard(LinearLayout parent) {
         LinearLayout module = card();
-        TextView tag = text("VISTA INTERACTIVA  /  EQUIPO Y SERPENTÍN", 10, INK, true);
+        TextView tag = text("MODELO PRINCIPAL  /  BIORREACTOR Y SERPENTÍN", 10, INK, true);
         tag.setBackground(rounded(TEAL, 0, INK));
         tag.setPadding(dp(8), dp(6), dp(8), dp(6));
         module.addView(tag, margins(0, 0, 0, 8));
-        module.addView(text("BIORREACTOR EN CORTE", 19, INK, true), margins(0, 0, 0, 5));
-        TextView copy = text("Inspecciona el recipiente, la agitación, la instrumentación y el recorrido del refrigerante. Ajusta parámetros y revisa el dimensionamiento desde esta sección de resultados.", 12, MUTED, false);
+        module.addView(text("DIAGRAMA PARAMÉTRICO DEL EQUIPO", 19, INK, true), margins(0, 0, 0, 5));
+        TextView copy = text("Vista interactiva del recipiente, la agitación, la instrumentación y el serpentín con los valores actuales de la calculadora.", 12, MUTED, false);
         copy.setLineSpacing(dp(2), 1f);
         module.addView(copy, margins(0, 0, 0, 10));
-        bioreactorToggle = smallButton("DESPLEGAR MODELO INTERACTIVO  ↓");
-        bioreactorToggle.setBackground(projected(TEAL));
-        bioreactorToggle.setOnClickListener(v -> toggleBioreactorModule());
-        module.addView(bioreactorToggle);
 
         bioreactorWebView = new WebView(this);
-        bioreactorWebView.setVisibility(View.GONE);
+        bioreactorWebView.setVisibility(View.VISIBLE);
         bioreactorWebView.setBackgroundColor(Color.TRANSPARENT);
         bioreactorWebView.setVerticalScrollBarEnabled(false);
         bioreactorWebView.setHorizontalScrollBarEnabled(false);
@@ -529,25 +523,19 @@ public class MainActivity extends Activity {
         webParams.topMargin = dp(12);
         module.addView(bioreactorWebView, webParams);
         parent.addView(module, margins(0, 0, 0, 14));
+        bioreactorWebView.loadUrl("file:///android_asset/bioreactor/index.html?embed=1");
     }
 
     private void addMetabolicBalanceCard(LinearLayout parent) {
         LinearLayout module = card();
-        TextView tag = text("BALANCE METABÓLICO  /  DESPEJE DE ENTRADAS", 10, INK, true);
-        tag.setBackground(rounded(TEAL, 0, INK));
+        TextView tag = text("CALCULADORA  /  BALANCE METABÓLICO", 10, INK, true);
+        tag.setBackground(rounded(YELLOW, 0, INK));
         tag.setPadding(dp(8), dp(6), dp(8), dp(6));
         module.addView(tag, margins(0, 0, 0, 8));
-        module.addView(text("CALCULA LA ENTRADA QUE TE FALTA", 19, INK, true), margins(0, 0, 0, 5));
-        TextView copy = text("Despeja la carga térmica, el calor metabólico específico, el volumen de caldo o la potencia de agitación a partir del balance.", 12, MUTED, false);
-        copy.setLineSpacing(dp(2), 1f);
-        module.addView(copy, margins(0, 0, 0, 10));
-        metabolicBalanceToggle = smallButton("ABRIR BALANCE METABÓLICO  ↓");
-        metabolicBalanceToggle.setBackground(projected(TEAL));
-        metabolicBalanceToggle.setOnClickListener(v -> toggleMetabolicBalance());
-        module.addView(metabolicBalanceToggle);
+        module.addView(text("CALOR METABÓLICO, VOLUMEN Y AGITACIÓN", 17, INK, true), margins(0, 0, 0, 5));
+        module.addView(text("Calcula cualquiera de estas variables o la carga total con el balance Q̇ = q̇_met · V_caldo + P_agitación.", 12, MUTED, false), margins(0, 0, 0, 8));
 
         metabolicBalanceWebView = new WebView(this);
-        metabolicBalanceWebView.setVisibility(View.GONE);
         metabolicBalanceWebView.setBackgroundColor(Color.TRANSPARENT);
         metabolicBalanceWebView.setVerticalScrollBarEnabled(false);
         metabolicBalanceWebView.setHorizontalScrollBarEnabled(false);
@@ -566,35 +554,28 @@ public class MainActivity extends Activity {
             }
             @Override public void onPageFinished(WebView view, String url) {
                 metabolicBalanceWebViewLoaded = true;
-                view.evaluateJavascript("document.documentElement.classList.add('embedded');ThermaBioAndroid.reportContentHeight(document.documentElement.scrollHeight);", null);
+                view.evaluateJavascript("document.documentElement.classList.add('embedded');window.ThermaMetabolicBalanceUI.setInputs(" + currentValuesJson() + ");ThermaBioAndroid.reportContentHeight(document.documentElement.scrollHeight);", null);
             }
         });
-        LinearLayout.LayoutParams webParams = new LinearLayout.LayoutParams(-1, dp(720));
-        webParams.topMargin = dp(12);
+        LinearLayout.LayoutParams webParams = new LinearLayout.LayoutParams(-1, dp(620));
+        webParams.topMargin = dp(6);
         module.addView(metabolicBalanceWebView, webParams);
-        parent.addView(module, margins(0, 0, 0, 14));
-    }
-
-    private void toggleMetabolicBalance() {
-        if (metabolicBalanceWebView.getVisibility() == View.VISIBLE) {
-            metabolicBalanceWebView.setVisibility(View.GONE);
-            metabolicBalanceToggle.setText("ABRIR BALANCE METABÓLICO  ↓");
-            return;
-        }
-        metabolicBalanceWebView.setVisibility(View.VISIBLE);
-        metabolicBalanceToggle.setText("OCULTAR BALANCE METABÓLICO  ↑");
-        if (!metabolicBalanceWebViewLoaded) metabolicBalanceWebView.loadUrl("file:///android_asset/balance-metabolico.html?embed=1");
+        parent.addView(module, margins(0, 4, 0, 16));
+        metabolicBalanceWebView.loadUrl("file:///android_asset/balance-metabolico.html?embed=1");
     }
 
     private final class MetabolicBalanceBridge {
+        @JavascriptInterface public String getInitialData() { return currentValuesJson(); }
+
         @JavascriptInterface public void reportContentHeight(int cssHeight) {
             runOnUiThread(() -> {
                 if (metabolicBalanceWebView == null || metabolicBalanceWebView.getLayoutParams() == null) return;
                 LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) metabolicBalanceWebView.getLayoutParams();
-                params.height = Math.max(dp(460), Math.min(dp(2500), dp(cssHeight)));
+                params.height = Math.max(dp(460), Math.min(dp(1600), dp(cssHeight)));
                 metabolicBalanceWebView.setLayoutParams(params);
             });
         }
+
         @JavascriptInterface public void applyMetabolicValue(String key, double value) {
             if (!("qMet".equals(key) || "volume".equals(key) || "agitation".equals(key)) || !Double.isFinite(value)) return;
             runOnUiThread(() -> {
@@ -603,25 +584,6 @@ public class MainActivity extends Activity {
                 input.setText(String.format(Locale.US, "%.10g", value));
                 Toast.makeText(MainActivity.this, "Valor aplicado a la calculadora principal.", Toast.LENGTH_SHORT).show();
             });
-        }
-    }
-
-    private void toggleBioreactorModule() {
-        if (values.size() != specs.size()) {
-            Toast.makeText(this, "Corrige o completa los parámetros para mostrar el modelo del biorreactor.", Toast.LENGTH_LONG).show();
-            return;
-        }
-        if (bioreactorWebView.getVisibility() == View.VISIBLE) {
-            bioreactorWebView.setVisibility(View.GONE);
-            bioreactorToggle.setText("DESPLEGAR MODELO INTERACTIVO  ↓");
-            return;
-        }
-        bioreactorWebView.setVisibility(View.VISIBLE);
-        bioreactorToggle.setText("OCULTAR MODELO INTERACTIVO  ↑");
-        if (!bioreactorWebViewLoaded) {
-            bioreactorWebView.loadUrl("file:///android_asset/bioreactor/index.html?embed=1");
-        } else {
-            bioreactorWebView.evaluateJavascript("window.ThermaBio.setInputs(" + currentValuesJson() + ");", null);
         }
     }
 
@@ -645,22 +607,16 @@ public class MainActivity extends Activity {
             });
         }
 
-        @JavascriptInterface public void closeModule() {
-            runOnUiThread(() -> {
-                if (bioreactorWebView != null) bioreactorWebView.setVisibility(View.GONE);
-                if (bioreactorToggle != null) bioreactorToggle.setText("DESPLEGAR MODELO INTERACTIVO  ↓");
-            });
-        }
     }
 
     @Override protected void onDestroy() {
-        if (bioreactorWebView != null) {
-            bioreactorWebView.removeJavascriptInterface("ThermaBioAndroid");
-            bioreactorWebView.destroy();
-        }
         if (metabolicBalanceWebView != null) {
             metabolicBalanceWebView.removeJavascriptInterface("ThermaBioAndroid");
             metabolicBalanceWebView.destroy();
+        }
+        if (bioreactorWebView != null) {
+            bioreactorWebView.removeJavascriptInterface("ThermaBioAndroid");
+            bioreactorWebView.destroy();
         }
         super.onDestroy();
     }
@@ -925,6 +881,14 @@ public class MainActivity extends Activity {
         unitParams.setMargins(0, dp(5), dp(5), dp(5));
         row.addView(unit, unitParams);
         cell.addView(row);
+        if ("qMet".equals(spec.key) || "volume".equals(spec.key) || "agitation".equals(spec.key)) {
+            Button solve = smallButton("DESPEJAR ESTE DATO");
+            solve.setTextSize(9);
+            solve.setMinHeight(dp(36));
+            solve.setBackground(projected(YELLOW));
+            solve.setOnClickListener(v -> showMetabolicSolveDialog(spec.key));
+            cell.addView(solve, margins(0, 4, 0, 2));
+        }
         LinearLayout.LayoutParams cellParams = new LinearLayout.LayoutParams(0, -2, 1f);
         cellParams.setMargins(dp(3), 0, dp(5), dp(6));
         parent.addView(cell, cellParams);
@@ -937,6 +901,106 @@ public class MainActivity extends Activity {
             }
             @Override public void afterTextChanged(Editable s) {}
         });
+    }
+
+    private void showMetabolicSolveDialog(String target) {
+        String[] knownKeys = "qMet".equals(target) ? new String[]{"qTotal", "volume", "agitation"} :
+                "volume".equals(target) ? new String[]{"qTotal", "qMet", "agitation"} :
+                        new String[]{"qTotal", "qMet", "volume"};
+        Map<String, String> labels = new LinkedHashMap<>();
+        labels.put("qTotal", "Carga térmica total conocida (kW)");
+        labels.put("qMet", "Calor metabólico específico (kW/m³)");
+        labels.put("volume", "Volumen de caldo (m³)");
+        labels.put("agitation", "Potencia disipada por agitación (kW)");
+        String resultUnit = "qMet".equals(target) ? "kW/m³" : "volume".equals(target) ? "m³" : "kW";
+
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(dp(20), dp(4), dp(20), dp(8));
+        TextView equation = text("Q̇_total = q̇_met · V_caldo + P_agitación\nIngresa una carga térmica total conocida. Los otros dos datos se precargan desde la calculadora y puedes editarlos aquí.", 12, MUTED, false);
+        equation.setLineSpacing(dp(3), 1f);
+        content.addView(equation, margins(0, 0, 0, 12));
+
+        Map<String, EditText> knownInputs = new LinkedHashMap<>();
+        for (String key : knownKeys) {
+            TextView label = text(labels.get(key), 11, INK, true);
+            content.addView(label, margins(0, 5, 0, 2));
+            EditText input = new EditText(this);
+            input.setSingleLine(true);
+            input.setTextSize(16);
+            input.setTypeface(monoTypeface);
+            input.setInputType(android.text.InputType.TYPE_CLASS_NUMBER | android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL | android.text.InputType.TYPE_NUMBER_FLAG_SIGNED);
+            input.setHint("Carga térmica conocida");
+            input.setSelectAllOnFocus(true);
+            input.setPadding(dp(10), dp(7), dp(10), dp(7));
+            if (!"qTotal".equals(key)) {
+                EditText current = editors.get(key);
+                if (current != null) input.setText(current.getText().toString());
+            }
+            knownInputs.put(key, input);
+            content.addView(input, margins(0, 0, 0, 5));
+        }
+        TextView result = text("Resultado: —", 16, INK, true);
+        result.setBackground(rounded(TEAL, 2, INK));
+        result.setPadding(dp(10), dp(9), dp(10), dp(9));
+        content.addView(result, margins(0, 12, 0, 0));
+
+        String title = "qMet".equals(target) ? "Calcular calor metabólico específico" :
+                "volume".equals(target) ? "Calcular volumen de caldo" : "Calcular potencia de agitación";
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setView(content)
+                .setNegativeButton("Cancelar", null)
+                .setPositiveButton("Aplicar a la calculadora", null)
+                .create();
+        final double[] solved = {Double.NaN};
+        dialog.setOnShowListener(ignored -> {
+            Button apply = dialog.getButton(AlertDialog.BUTTON_POSITIVE);
+            Runnable update = () -> {
+                try {
+                    double qTotal = dialogNumber(knownInputs.get("qTotal"), "La carga térmica total");
+                    double qMet = "qMet".equals(target) ? Double.NaN : dialogNumber(knownInputs.get("qMet"), "El calor metabólico específico");
+                    double volume = "volume".equals(target) ? Double.NaN : dialogNumber(knownInputs.get("volume"), "El volumen de caldo");
+                    double agitation = "agitation".equals(target) ? Double.NaN : dialogNumber(knownInputs.get("agitation"), "La potencia de agitación");
+                    solved[0] = MetabolicBalance.solve(target, qTotal, qMet, volume, agitation);
+                    result.setText("Resultado: " + f(solved[0]) + " " + resultUnit);
+                    result.setTextColor(INK);
+                    apply.setEnabled(true);
+                } catch (IllegalArgumentException error) {
+                    solved[0] = Double.NaN;
+                    result.setText("Revisa los datos: " + error.getMessage());
+                    result.setTextColor(MAGENTA);
+                    apply.setEnabled(false);
+                }
+            };
+            for (EditText input : knownInputs.values()) input.addTextChangedListener(new TextWatcher() {
+                @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+                @Override public void onTextChanged(CharSequence s, int start, int before, int count) { update.run(); }
+                @Override public void afterTextChanged(Editable s) {}
+            });
+            apply.setEnabled(false);
+            apply.setOnClickListener(v -> {
+                if (!Double.isFinite(solved[0])) return;
+                EditText targetInput = editors.get(target);
+                if (targetInput != null) targetInput.setText(String.format(Locale.US, "%.10g", solved[0]));
+                dialog.dismiss();
+                Toast.makeText(this, "Valor aplicado y resultados actualizados.", Toast.LENGTH_SHORT).show();
+            });
+            update.run();
+        });
+        dialog.show();
+    }
+
+    private double dialogNumber(EditText input, String label) {
+        String value = input == null ? "" : input.getText().toString().trim().replace(',', '.');
+        if (value.isEmpty()) throw new IllegalArgumentException("ingresa " + label.toLowerCase(Locale.ROOT) + ".");
+        try {
+            double number = Double.parseDouble(value);
+            if (!Double.isFinite(number)) throw new NumberFormatException();
+            return number;
+        } catch (NumberFormatException error) {
+            throw new IllegalArgumentException(label + " debe ser un número finito.");
+        }
     }
 
     private void calculate(boolean notify) {
@@ -1097,6 +1161,13 @@ public class MainActivity extends Activity {
 
     private void renderResults(Map<String, String> result) {
         resultValues.clear(); resultValues.putAll(result);
+        String currentInputs = currentValuesJson();
+        if (metabolicBalanceWebViewLoaded && metabolicBalanceWebView != null) {
+            metabolicBalanceWebView.evaluateJavascript("window.ThermaMetabolicBalanceUI.setInputs(" + currentInputs + ");", null);
+        }
+        if (bioreactorWebViewLoaded && bioreactorWebView != null) {
+            bioreactorWebView.evaluateJavascript("window.ThermaBio.setInputs(" + currentInputs + ");", null);
+        }
         statusText.setText("Actualizado en vivo · cálculo ejecutado en este teléfono");
         statusText.setTextColor(INK);
         summaryGrid.removeAllViews(); resultRows.removeAllViews(); calculatorSummaryGrid.removeAllViews();

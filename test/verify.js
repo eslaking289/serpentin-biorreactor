@@ -207,7 +207,7 @@ const context = {
       if (url.endsWith('/index.html')) return new Response('cached app shell', { status: 200 });
       return null;
     },
-    async keys() { return ['thermabio-v2', 'thermabio-v3', 'thermabio-v4']; },
+    async keys() { return ['thermabio-v2', 'thermabio-v3', 'thermabio-v4', 'thermabio-v5']; },
     async delete(key) { deleted.push(key); }
   },
   async fetch(request) {
@@ -234,7 +234,7 @@ installPromise.then(async () => {
   let activatePromise;
   listeners.get('activate')({ waitUntil(promise) { activatePromise = promise; } });
   await activatePromise;
-  assert.deepEqual(deleted, ['thermabio-v2', 'thermabio-v3', 'thermabio-v4']);
+  assert.deepEqual(deleted, ['thermabio-v2', 'thermabio-v3', 'thermabio-v4', 'thermabio-v5']);
   assert.equal(claimed, true);
   offline = true;
   let offlineResponsePromise;

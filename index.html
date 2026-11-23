@@ -95,6 +95,10 @@
               <label class="field"><span>Separación vertical entre vueltas</span><span class="input-wrap"><input id="pitch" type="number" min="1" step="any" value="75"><em>mm</em></span></label>
             </div>
           </div>
+          <div class="form-section balance-section" id="balance-metabolico">
+            <div class="form-section-title"><span class="step-number">D</span><div><b>Balance metabólico</b><small>Despejes de q̇_met, volumen, agitación o carga total</small></div></div>
+            <iframe id="balanceFrame" title="Calculadora del balance metabólico de ThermaBio" src="./balance-metabolico.html?embed=1" loading="lazy" height="620"></iframe>
+          </div>
           <div class="input-footer"><span><span class="asterisk">*</span> Los resultados se actualizan al editar valores válidos.</span><button id="calculateBtn" class="button button-primary" type="button">Recalcular <span>↗</span></button></div>
         </section>
 
@@ -105,10 +109,6 @@
           <div class="insight-box"><span class="insight-icon">i</span><div><b id="insightTitle">Lectura del diseño</b><p id="insightText">Los resultados se actualizarán al ingresar las condiciones.</p></div></div>
         </section>
       </div>
-      <section class="panel calculation-panel" id="balance-metabolico">
-        <div class="panel-heading"><div><span class="section-kicker">03 / BALANCE METABÓLICO</span><h2>Calcula la entrada que te falta</h2><p>Despeja carga térmica, calor metabólico específico, volumen de caldo o potencia de agitación.</p></div><span class="editable-tag">ACTUALIZACIÓN EN VIVO</span></div>
-        <iframe id="balanceFrame" title="Calculadora del balance metabólico de ThermaBio" src="./balance-metabolico.html?embed=1" loading="lazy" height="620"></iframe>
-      </section>
       <section class="method-strip" id="metodo"><div class="method-icon">∑</div><div><span class="section-kicker">CRITERIO DE CÁLCULO</span><h3>Supuestos visibles, resultados trazables</h3><p>El deber térmico suma el calor de reacción y la disipación por agitación. La superficie se calcula con resistencias térmicas en serie y diferencia media logarítmica. Revisa el método y las limitaciones antes de usar resultados para un diseño físico.</p></div><a href="#metodologia-completa">Ver metodología completa <span>↗</span></a></section>
 
       <section class="panel methodology-panel" id="metodologia-completa" aria-labelledby="methodTitle">

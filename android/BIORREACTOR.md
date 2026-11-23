@@ -1,6 +1,6 @@
 # Módulo interactivo de biorreactor Android
 
-En la pantalla **Resultados** también está disponible **Balance metabólico**. Permite despejar carga térmica total, calor metabólico específico, volumen de caldo o potencia de agitación a partir de las otras tres variables mediante `Q̇_total = q̇_met · V_caldo + P_agitación`. El valor de calor metabólico, volumen o agitación se puede aplicar a los campos correspondientes de la calculadora principal.
+En la pantalla **Calculadora** está el módulo **Balance metabólico**. Permite despejar carga térmica total, calor metabólico específico, volumen de caldo o potencia de agitación mediante `Q̇_total = q̇_met · V_caldo + P_agitación`. El valor de calor metabólico, volumen o agitación se puede aplicar a los campos correspondientes de la calculadora principal. En **Resultados**, el diagrama paramétrico del biorreactor aparece abierto al inicio y recibe los parámetros de la calculadora.
 
 El módulo se despliega dentro de la tarjeta **Biorreactor en corte** en la pantalla **Resultados**; no abre otra pantalla. Está incluido en `android/app/src/main/assets/bioreactor/` y se carga en una `WebView` local expandida a la altura del contenido, con las solicitudes de red bloqueadas. Su interfaz usa los colores y la tipografía de ThermaBio. No depende del sitio GitHub Pages, servicios web, bibliotecas descargadas ni permiso de Internet. Al abrirlo, recibe los valores actualmente editados en la calculadora.
 

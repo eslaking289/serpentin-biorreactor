@@ -4,11 +4,11 @@ Aplicación local para estimar la carga térmica de una fermentación aeróbica 
 
 **Aplicación web:** [Abrir ThermaBio](https://eslaking289.github.io/serpentin-biorreactor/)
 
-**APK nativa para Android:** descarga [ThermaBio para Android 1.5.3](https://github.com/eslaking289/serpentin-biorreactor/raw/refs/heads/main/android/dist/ThermaBio-Android-1.5.3.apk). La aplicación no solicita permiso de Internet.
+**APK nativa para Android:** descarga [ThermaBio para Android 1.5.4](https://github.com/eslaking289/serpentin-biorreactor/raw/refs/heads/main/android/dist/ThermaBio-Android-1.5.4.apk). La aplicación no solicita permiso de Internet.
 
 La pantalla **Resultados** contiene una tarjeta que despliega el modelo interactivo del biorreactor dentro de la misma pantalla. El módulo usa recursos incluidos en el APK, y el modelo, los supuestos y sus límites están documentados en [`android/BIORREACTOR.md`](android/BIORREACTOR.md).
 
-La sección **Balance metabólico** permite calcular la carga térmica total, el calor metabólico específico, el volumen de caldo o la potencia de agitación conociendo las otras tres variables. En Android, el resultado calculado para calor metabólico, volumen o agitación se puede aplicar directamente a la calculadora principal.
+En **Condiciones de operación** está la calculadora del balance metabólico para despejar carga térmica total, calor metabólico específico, volumen de caldo o potencia de agitación. En Android aparece dentro de la pantalla **Calculadora** y puedes aplicar q̇_met, volumen o agitación a los campos principales. En **Resultados**, el diagrama paramétrico del biorreactor se muestra expandido al inicio y refleja los valores calculados.
 
 ## Inicio rápido
 
