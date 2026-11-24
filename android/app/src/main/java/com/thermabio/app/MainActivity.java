@@ -564,7 +564,26 @@ public class MainActivity extends Activity {
         TextView note = text("Usa «Despejar este dato» en calor metabólico, volumen o potencia para calcular esa entrada. La carga total se actualiza con esos valores.", 12, MUTED, false);
         note.setLineSpacing(dp(2), 1f);
         module.addView(note);
+        Button process = smallButton("Análisis biológico y de energía  →");
+        process.setBackground(projected(TEAL));
+        process.setTextColor(Color.WHITE);
+        process.setOnClickListener(v -> showBioprocessDialog());
+        module.addView(process, margins(0, 10, 0, 0));
         parent.addView(module, margins(0, 4, 0, 16));
+    }
+
+    private void showBioprocessDialog() {
+        WebView view = new WebView(this);
+        view.setBackgroundColor(BG);
+        view.getSettings().setJavaScriptEnabled(true);
+        view.loadUrl("file:///android_asset/bioprocess.html");
+        AlertDialog dialog = new AlertDialog.Builder(this)
+                .setTitle("Análisis de bioproceso")
+                .setView(view)
+                .setPositiveButton("Cerrar", null)
+                .create();
+        dialog.show();
+        dialog.getWindow().setLayout(-1, (int) (getResources().getDisplayMetrics().heightPixels * 0.86));
     }
 
     private LinearLayout newScreen() {
