@@ -27,6 +27,8 @@ El resultado se crea en `android/app/build/outputs/apk/debug/app-debug.apk`. La 
 
 El cálculo incluido en `index.html` estima enfriamiento sensible: trata cultivo y refrigerante como agua, usa un coeficiente global `U` ingresado por el usuario y compara la potencia transferida con la absorbida por el refrigerante. No calcula generación metabólica ni calor de agitación. Es una herramienta académica preliminar, no un plano de fabricación ni una selección de bomba. Consulta [`android/BIORREACTOR.md`](android/BIORREACTOR.md) para las ecuaciones y límites.
 
+El módulo reutilizable `bioprocess-core.js` calcula Monod, consumo de sustrato, OUR/OTR, generación de calor por un método seleccionado, potencia de agitación y el coeficiente externo de Doran cuando el usuario proporciona todos los parámetros. No incluye una base de datos biológica ni valores ficticios: los datos de literatura requieren referencia y condiciones experimentales. Es un módulo JavaScript sin DOM; sus unidades de entrada están indicadas en sus claves y se verifica con `node test/bioprocess-verify.js`.
+
 ## Verificación matemática
 
 Los módulos numéricos de referencia que conserva el repositorio se pueden comprobar con Node.js:
