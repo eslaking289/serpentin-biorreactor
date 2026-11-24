@@ -1100,7 +1100,7 @@ public class MainActivity extends Activity {
         schematicResults.put("tankHeight", tankH);
         schematicResults.put("liquidHeight", liquidHeight);
         schematicResults.put("pitch", pitch);
-        schematicResults.put("turns", actualTurns);
+        schematicResults.put("turns", (double) actualTurns);
         schematicResults.put("coilHeight", height);
         schematicResults.put("tubeLength", actualLength);
         schematicResults.put("brothTemperature", get(v, "tBroth"));
