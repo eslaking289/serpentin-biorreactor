@@ -2,9 +2,9 @@
 
 Aplicación Android que empaqueta la interfaz interactiva del biorreactor en un APK instalable. La interfaz se ejecuta desde archivos locales.
 
-**Descarga:** [ThermaBio Android 1.7.4](https://github.com/eslaking289/serpentin-biorreactor/releases/download/apk-v1.7.4/ThermaBio-Android.apk).
+**Descarga:** [ThermaBio Android 1.7.5](https://github.com/eslaking289/serpentin-biorreactor/releases/download/apk-v1.7.5/ThermaBio-Android.apk).
 
-La APK une la calculadora térmica y biológica con resultados, metodología y el modelo 3D interactivo. El análisis de bioproceso está integrado como una sección de la calculadora: al aplicar el balance, sus cargas y resultados pasan al dimensionamiento y aparecen en el informe. Los parámetros están organizados en paneles verticales amplios. La interfaz usa una paleta oliva y marfil, contornos rectos y tipografía monoespaciada inspirados en la referencia retro. El modelo 3D conserva el `index.html` original, con accesos a Modelo, Componentes, Parámetros y Cálculos, zoom con pellizco y botones. La app funciona desde recursos locales, sin navegador externo ni permiso de Internet.
+La APK une la calculadora térmica y biológica con resultados, metodología y el modelo 3D interactivo. El análisis de bioproceso está integrado como una sección de la calculadora: los valores compartidos se sincronizan en vivo en ambos sentidos: volumen, calor metabólico, agitación, temperatura de caldo, temperaturas y propiedades del refrigerante. El calor generado y el balance biológico aparecen en los resultados y el CSV. La sección Método incluye las ecuaciones de bioproceso, energía, transferencia y dimensionamiento usadas por la app. Los parámetros están organizados en paneles verticales amplios. La interfaz usa una paleta oliva y marfil, contornos rectos y tipografía monoespaciada inspirados en la referencia retro. El modelo 3D conserva el `index.html` original, con accesos a Modelo, Componentes, Parámetros y Cálculos, zoom con pellizco y botones. La app funciona desde recursos locales, sin navegador externo ni permiso de Internet.
 
 ## Instalar
 

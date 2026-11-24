@@ -89,6 +89,7 @@ public class MainActivity extends Activity {
     private TextView statusText;
     private WebView modelWebView;
     private WebView bioprocessWebView;
+    private boolean bioprocessWebViewReady;
     private boolean modelWebViewLoaded;
     private boolean modelWebViewReady;
     private boolean modelPreviewMode;
@@ -316,34 +317,54 @@ public class MainActivity extends Activity {
         method.addView(methodTitle, margins(0, 0, 0, 5));
         method.addView(text("FUNDAMENTO TÉRMICO · CÁLCULO LOCAL", 10, MUTED, true), margins(0, 0, 0, 12));
         addMethodBlock(method, "01 / BALANCE TÉRMICO TOTAL", YELLOW,
-                equationText("Q_rxn = −r_rxn · V · ΔH_rxn"),
-                equationText("Q_diseño = Q_met + φd · P_agit + Q_feed + Q_otros"),
+                equationText("Q_met = q_met · V; Q_agit = φd · P_agit"),
+                equationText("Q_total = q_met·V + φd·P_agit + Q_otros"),
+                equationText("Q_rxn = −ΔH_rxn · consumo molar / 3600 [kW, mol/h y kJ/mol]"),
                 equationText("M · Cp,b · dTb/dt = Q_generado − Q_serpentín − Q_ambiente + Q_alimentación"));
         addMethodBlock(method, "02 / DIFERENCIA MEDIA LOGARÍTMICA", TEAL,
                 equationText("ΔT₁ = T_caldo − T_salida"),
                 equationText("ΔT₂ = T_caldo − T_entrada"),
-                equationLine(equationText("ΔT_lm ="), fraction("ΔT₂ − ΔT₁", "ln(ΔT₂ / ΔT₁)")));
+                equationLine(equationText("ΔT_lm ="), fraction("ΔT₂ − ΔT₁", "ln(ΔT₂ / ΔT₁)")),
+                equationLine(equationText("ṁ_refrigerante ="), fraction("Q_diseño", "Cp · ΔT_refrigerante")),
+                equationText("Q_refrigerante = ṁ · Cp · (T_salida−T_entrada)"),
+                equationText("T_salida = T_entrada + Q/(ṁ · Cp)"));
         addMethodBlock(method, "03 / TRANSFERENCIA EN EL TUBO", MAGENTA,
                 equationLine(equationText("ṁ_req ="), fraction("Q_diseño", "C_p · (T_s − T_e)")),
                 equationLine(equationText("v ="), fraction("4ṁ", "ρπD_i²")),
                 equationLine(equationText("Re ="), fraction("4ṁ", "πD_iμ")),
                 equationLine(equationText("Pr ="), fraction("μ · C_p · 1000", "k_f")),
-                equationText("Nu = 3.66 (pared constante); Nu = 4.36 (flujo constante), laminar"),
-                equationText("Nu turbulento: Gnielinski dentro de su rango de aplicación"),
+                equationText("Nu laminar usado: 3.66; 4.36 corresponde a flujo de pared constante"),
+                equationText("Nu transición 2300≤Re<3000: w=(Re−2300)/700; Nu=(1−w)·3.66+w·Nu_G(3000,Pr)"),
+                equationText("Nu_G=(f/8)(Re−1000)Pr / [1+12.7√(f/8)(Pr^(2/3)−1)]"),
                 equationLine(equationText("h_i ="), fraction("Nu · k_f", "D_i")),
                 equationText("De = Re√(D_i/D_hélice); se reporta sin corrección helicoidal"));
         addMethodBlock(method, "04 / RESISTENCIAS Y ÁREA EXTERIOR", TEAL,
-                equationText("1/U_o = 1/h_o + Rf,o + (D_o/D_i)Rf,i"),
-                equationText("+ D_o·ln(D_o/D_i)/(2k_p) + D_o/(D_i·h_i)"),
+                equationText("1/Uo=Do/(Di·hi)+Do·ln(Do/Di)/(2kp)+1/ho+Rf,o+(Do/Di)·Rf,i"),
                 equationLine(equationText("A_o ="), fraction("1000 · Q_diseño", "U_o · ΔT_lm")),
-                equationLine(equationText("Q_capacidad = U_o · A_instalada · ΔT_lm")));
+                equationText("L_requerida=A_o/(π·Do); A_instalada=π·Do·L_instalada"),
+                equationLine(equationText("Q_capacidad = U_o · A_instalada · ΔT_lm")),
+                equationText("Suficiencia térmica = Q_capacidad / Q_diseño"));
         addMethodBlock(method, "05 / GEOMETRÍA Y CAÍDA DE PRESIÓN", Color.BLACK,
                 equationText("D_i = D_o − 2 t_pared"),
                 equationText("D_hélice + D_o + 2 holgura ≤ D_tanque"),
                 equationText("L_vuelta = √[(π · D_hélice)² + paso²]"),
-                equationLine(equationText("N_real = ceil(A_req / L_vuelta)")),
-                equationText("H_total = (N_real − 1) · paso + D_o"),
-                equationText("ΔP_total = f_D · (L/D_i) · ρv²/2 + ΣK · ρv²/2 + ρgΔz"));
+                equationText("N_teóricas = L_req/L_vuelta; N_reales = ceil(N_teóricas)"),
+                equationText("L_instalada=N_reales·L_vuelta; Htotal=(Nreales−1)·paso+Do"),
+                equationText("fD=64/Re (Re≤2300); w=(Re−2300)/1700; fD interpola a fP(4000); luego fP=[0.79ln(Re)−1.64]⁻²"),
+                equationText("ΔP_total=f_D(L/D_i)ρv²/2 + ΣKρv²/2 + ρgΔz; P_bomba=ΔP·Q/η"));
+        addMethodBlock(method, "06 / BIOPROCESO Y CALOR ACOPLADO", YELLOW,
+                equationText("μ=μmax·S/(Ks+S); μO₂=μ·CL/(KO₂+CL)"),
+                equationText("dX/dt=(μ−kd)X; qS=μ/Yx/s+ms; rS=qS·X"),
+                equationText("OUR=qO₂·X; OTR=kLa(C*−CL); dCL/dt=OTR−OUR"),
+                equationText("Qmet,O₂=YQ/O₂·OUR·V·1000/3600 [kW]"),
+                equationText("Qmet,rxn=−ΔHrxn·consumo molar/3600 [kW]"),
+                equationText("Reimp=ρ·N·D²/μ; Pagit=Np·ρ·N³·D⁵ [W]"),
+                equationText("Qagit=φd·Pagit/1000 [kW]"),
+                equationText("Nu caldo=0.9·Re^0.62·Pr^0.33·(μ/μw)^0.14 [correlación Doran]"),
+                equationText("hcaldo=Nu·kcaldo/Dtanque"),
+                equationText("Qgenerado=Qmet+Qagit+Qfeed+Qotros; OUR y ΔH son métodos alternativos"),
+                equationText("M·Cp·dT/dt=Qgenerado−Qremovido−Qambiente+Qalimentación"),
+                equationText("Qcapacidad=Uo·Ainstalada·ΔTlm; suficiencia=Qcapacidad/Qdiseño"));
         LinearLayout assumptions = card();
         TextView assumptionsTitle = text("SUPUESTOS Y LÍMITES", 16, INK, true);
         assumptionsTitle.setBackground(rounded(MAGENTA, 0, INK));
@@ -410,7 +431,7 @@ public class MainActivity extends Activity {
     private TextView equationText(String source) {
         TextView view = text("", 13, INK, false);
         view.setText(mathText(source));
-        view.setTypeface(Typeface.create("serif", Typeface.NORMAL));
+        view.setTypeface(monoTypeface);
         view.setGravity(Gravity.CENTER);
         view.setIncludeFontPadding(true);
         view.setPadding(dp(2), dp(4), dp(2), dp(4));
@@ -554,7 +575,7 @@ public class MainActivity extends Activity {
         tag.setPadding(dp(9), dp(9), dp(9), dp(9));
         tag.setBackground(rounded(AMBER_SOFT, 1, LINE));
         module.addView(tag, margins(0, 0, 0, 6));
-        TextView note = text("Completa los datos conocidos. Al aplicar el balance, sus cargas se transfieren a esta calculadora.", 11, MUTED, false);
+        TextView note = text("ENLACE EN VIVO: los valores compartidos se actualizan entre este análisis y el dimensionamiento térmico.", 11, MUTED, false);
         note.setLineSpacing(dp(2), 1f);
         module.addView(note, margins(2, 0, 2, 8));
 
@@ -573,7 +594,12 @@ public class MainActivity extends Activity {
         bioprocessWebView.getSettings().setJavaScriptEnabled(true);
         bioprocessWebView.getSettings().setAllowFileAccess(true);
         bioprocessWebView.addJavascriptInterface(new BioprocessBridge(), "ThermaBioNative");
-        bioprocessWebView.setWebViewClient(new WebViewClient());
+        bioprocessWebView.setWebViewClient(new WebViewClient() {
+            @Override public void onPageFinished(WebView view, String url) {
+                bioprocessWebViewReady = true;
+                syncNativeInputsToBioprocess();
+            }
+        });
         module.addView(bioprocessWebView, new LinearLayout.LayoutParams(-1, dp(320)));
         bioprocessWebView.loadUrl("file:///android_asset/bioprocess.html");
         parent.addView(module, margins(0, 0, 0, 14));
@@ -593,12 +619,10 @@ public class MainActivity extends Activity {
             });
         }
 
-        @JavascriptInterface public void applyHeat(String json) {
+        @JavascriptInterface public void updateLinkedInputs(String json) {
             runOnUiThread(() -> {
                 try {
                     JSONObject data = new JSONObject(json);
-                    double volume = data.getDouble("volumeM3");
-                    if (!Double.isFinite(volume) || volume <= 0) throw new IllegalArgumentException("Volumen no válido.");
                     bioprocessResults.clear();
                     JSONObject summary = data.optJSONObject("summary");
                     if (summary != null) {
@@ -609,25 +633,81 @@ public class MainActivity extends Activity {
                         }
                     }
                     initializing = true;
-                    setEditorValue("volume", volume);
-                    setEditorValue("qMet", data.isNull("metabolicKW") ? 0 : data.getDouble("metabolicKW") / volume);
+                    double volume = data.optDouble("volumeM3", Double.NaN);
+                    if (Double.isFinite(volume) && volume > 0) setEditorValue("volume", volume);
+                    setEditorValue("qMet", volume > 0 && !data.isNull("metabolicKW")
+                            ? data.getDouble("metabolicKW") / volume : 0);
                     setEditorValue("agitation", data.isNull("agitationPowerKW") ? 0 : data.getDouble("agitationPowerKW"));
                     setEditorValue("phiD", data.isNull("agitationHeatFraction") ? 1 : data.getDouble("agitationHeatFraction"));
                     setEditorValue("qOther", data.isNull("otherKW") ? 0 : data.getDouble("otherKW"));
+                    setIfPresent(data, "brothTemperatureC", "tBroth");
+                    setIfPresent(data, "coolantInletTempC", "tIn");
+                    setIfPresent(data, "coolantMassFlowKgS", "coolantFlow");
+                    setIfPresent(data, "coolantCpKJPerKgK", "cp");
+                    setIfPresent(data, "coolantDensityKgM3", "rho");
+                    double inlet = editors.containsKey("tIn") ? readEditorValue("tIn") : Double.NaN;
+                    double delta = data.optDouble("coolantDeltaTK", Double.NaN);
+                    if (Double.isFinite(inlet) && Double.isFinite(delta) && delta > 0) setEditorValue("tOut", inlet + delta);
                     initializing = false;
                     calculate(false);
-                    if (resultValues.isEmpty()) {
-                        Toast.makeText(MainActivity.this, "Balance aplicado, pero revisa los parámetros térmicos antes de continuar.", Toast.LENGTH_LONG).show();
-                    } else {
-                        Toast.makeText(MainActivity.this, "Balance integrado en el cálculo del serpentín.", Toast.LENGTH_SHORT).show();
-                        showScreen(1);
-                    }
                 } catch (Exception error) {
                     initializing = false;
-                    Toast.makeText(MainActivity.this, "No se pudo integrar el balance: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(MainActivity.this, "No se pudieron sincronizar los valores: " + error.getMessage(), Toast.LENGTH_LONG).show();
                 }
             });
         }
+
+        @JavascriptInterface public void updateSummary(String json) {
+            runOnUiThread(() -> {
+                try {
+                    JSONObject summary = new JSONObject(json);
+                    bioprocessResults.clear();
+                    java.util.Iterator<String> keys = summary.keys();
+                    while (keys.hasNext()) {
+                        String key = keys.next();
+                        bioprocessResults.put(key, summary.optString(key, "—"));
+                    }
+                    calculate(false);
+                } catch (Exception ignored) { }
+            });
+        }
+    }
+
+    private void setIfPresent(JSONObject data, String sourceKey, String targetKey) throws Exception {
+        if (!data.isNull(sourceKey)) setEditorValue(targetKey, data.getDouble(sourceKey));
+    }
+
+    private double readEditorValue(String key) {
+        if (!editors.containsKey(key)) return Double.NaN;
+        try { return Double.parseDouble(editors.get(key).getText().toString().trim().replace(',', '.')); }
+        catch (Exception ignored) { return Double.NaN; }
+    }
+
+    private void syncNativeInputsToBioprocess() {
+        if (bioprocessWebView == null || !bioprocessWebViewReady) return;
+        try {
+            double volume = readEditorValue("volume");
+            double qMet = readEditorValue("qMet");
+            double qOther = readEditorValue("qOther");
+            double coolantIn = readEditorValue("tIn");
+            JSONObject linked = new JSONObject();
+            putIfFinite(linked, "volumeM3", volume);
+            putIfFinite(linked, "brothTemperatureC", readEditorValue("tBroth"));
+            putIfFinite(linked, "manualMetabolicKW", qMet * volume);
+            putIfFinite(linked, "agitationKW", readEditorValue("agitation"));
+            putIfFinite(linked, "agitationHeatFraction", readEditorValue("phiD"));
+            putIfFinite(linked, "otherHeatTotalKW", qOther);
+            putIfFinite(linked, "coolantInletTempC", coolantIn);
+            putIfFinite(linked, "coolantDeltaTK", readEditorValue("tOut") - coolantIn);
+            putIfFinite(linked, "coolantMassFlowKgS", readEditorValue("coolantFlow"));
+            putIfFinite(linked, "coolantCpKJPerKgK", readEditorValue("cp"));
+            putIfFinite(linked, "coolantDensityKgM3", readEditorValue("rho"));
+            bioprocessWebView.evaluateJavascript("window.ThermaBioBioprocessUi&&window.ThermaBioBioprocessUi.setNativeValues(" + linked + ")", null);
+        } catch (Exception ignored) { }
+    }
+
+    private void putIfFinite(JSONObject object, String key, double value) throws Exception {
+        if (Double.isFinite(value)) object.put(key, value);
     }
 
     private void setEditorValue(String key, double value) {
@@ -936,6 +1016,7 @@ public class MainActivity extends Activity {
                 if (initializing) return;
                 preferences.edit().putString(spec.key, s.toString()).apply();
                 calculate(false);
+                syncNativeInputsToBioprocess();
             }
             @Override public void afterTextChanged(Editable s) {}
         });
