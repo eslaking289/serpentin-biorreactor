@@ -36,6 +36,17 @@ jobs:
         with:
           gradle-version: '8.9'
 
+      - name: Prepare stable APK signing key
+        env:
+          THERMABIO_DEBUG_SIGNING_BUNDLE: ${{ secrets.THERMABIO_DEBUG_SIGNING_BUNDLE }}
+        run: |
+          if [ -n "$THERMABIO_DEBUG_SIGNING_BUNDLE" ]; then
+            printf '%s' "$THERMABIO_DEBUG_SIGNING_BUNDLE" | base64 --decode > "$RUNNER_TEMP/thermabio-signing.zip"
+            mkdir -p "$RUNNER_TEMP/thermabio-signing"
+            unzip -q "$RUNNER_TEMP/thermabio-signing.zip" -d "$RUNNER_TEMP/thermabio-signing"
+            echo "THERMABIO_SIGNING_PROPERTIES_PATH=$RUNNER_TEMP/thermabio-signing/signing.properties" >> "$GITHUB_ENV"
+          fi
+
       - name: Build offline native application
         run: gradle -p android :app:assembleDebug --no-daemon
 

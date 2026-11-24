@@ -2,16 +2,38 @@ plugins {
     id 'com.android.application'
 }
 
+def stableSigningPropertiesPath = System.getenv('THERMABIO_SIGNING_PROPERTIES_PATH')
+def stableSigningProperties = new Properties()
+def stableSigningPropertiesFile = stableSigningPropertiesPath ? new File(stableSigningPropertiesPath) : null
+if (stableSigningPropertiesFile != null && stableSigningPropertiesFile.isFile()) {
+    stableSigningPropertiesFile.withInputStream { stableSigningProperties.load(it) }
+}
+def hasStableSigning = stableSigningPropertiesFile != null && stableSigningPropertiesFile.isFile()
+
 android {
     namespace 'com.thermabio.app'
     compileSdk 35
+
+    if (hasStableSigning) {
+        signingConfigs {
+            stable {
+                storeFile new File(stableSigningPropertiesFile.parentFile, stableSigningProperties.getProperty('storeFile'))
+                storePassword stableSigningProperties.getProperty('storePassword')
+                keyAlias stableSigningProperties.getProperty('keyAlias')
+                keyPassword stableSigningProperties.getProperty('keyPassword')
+            }
+        }
+        buildTypes {
+            debug { signingConfig signingConfigs.stable }
+        }
+    }
 
     defaultConfig {
         applicationId 'com.thermabio.app'
         minSdk 23
         targetSdk 35
-        versionCode 33
-        versionName '1.7.6'
+        versionCode 34
+        versionName '1.7.7'
     }
 
     compileOptions {
