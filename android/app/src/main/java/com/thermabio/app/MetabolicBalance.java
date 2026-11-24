@@ -19,9 +19,9 @@ final class MetabolicBalance {
             case "volume":
                 double heatPerVolume = qTotal - phiD * agitation - qOther;
                 if (qMet == 0) throw new IllegalArgumentException("q_met debe ser distinto de cero para despejar el volumen.");
-                double volume = finite(heatPerVolume / qMet);
-                requirePositive(volume, "El volumen calculado");
-                return volume;
+                double calculatedVolume = finite(heatPerVolume / qMet);
+                requirePositive(calculatedVolume, "El volumen calculado");
+                return calculatedVolume;
             case "agitation":
                 requirePositive(volume, "El volumen de caldo");
                 if (phiD == 0) throw new IllegalArgumentException("φd debe ser mayor que cero para despejar la potencia de agitación.");
