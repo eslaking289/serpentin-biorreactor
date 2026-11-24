@@ -51,17 +51,19 @@ import java.util.Map;
 
 public class MainActivity extends Activity {
     private static final int CREATE_CSV = 41;
-    private static final int INK = Color.rgb(37, 38, 29);
-    private static final int MUTED = Color.rgb(91, 92, 70);
-    private static final int TEAL = Color.rgb(89, 96, 62);
-    private static final int MAGENTA = Color.rgb(117, 105, 70);
-    private static final int YELLOW = Color.rgb(184, 171, 103);
-    private static final int PAPER = Color.rgb(237, 235, 203);
-    private static final int BG = Color.rgb(111, 113, 82);
-    private static final int LINE = Color.rgb(48, 49, 36);
-    private static final int TEAL_SOFT = Color.rgb(210, 210, 174);
-    private static final int CORAL_SOFT = Color.rgb(220, 211, 174);
-    private static final int AMBER_SOFT = Color.rgb(228, 222, 180);
+    private static final int INK = Color.rgb(227, 226, 230);
+    private static final int MUTED = Color.rgb(187, 201, 203);
+    private static final int TEAL = Color.rgb(32, 201, 216);
+    private static final int ON_TEAL = Color.rgb(0, 54, 59);
+    private static final int MAGENTA = Color.rgb(207, 206, 255);
+    private static final int ERROR = Color.rgb(255, 180, 171);
+    private static final int YELLOW = Color.rgb(245, 158, 11);
+    private static final int PAPER = Color.rgb(31, 31, 35);
+    private static final int BG = Color.rgb(18, 19, 22);
+    private static final int LINE = Color.rgb(60, 73, 75);
+    private static final int TEAL_SOFT = Color.rgb(0, 54, 59);
+    private static final int CORAL_SOFT = Color.rgb(50, 37, 42);
+    private static final int AMBER_SOFT = Color.rgb(48, 39, 22);
 
     private static final class Spec {
         final String key, label, unit, group;
@@ -113,22 +115,18 @@ public class MainActivity extends Activity {
         getWindow().setStatusBarColor(BG);
         getWindow().setNavigationBarColor(BG);
         View decor = getWindow().getDecorView();
-        int systemBarFlags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            systemBarFlags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-        }
-        decor.setSystemUiVisibility(systemBarFlags);
+        decor.setSystemUiVisibility(0);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             android.view.WindowInsetsController controller = decor.getWindowInsetsController();
             if (controller != null) {
                 int appearance = android.view.WindowInsetsController.APPEARANCE_LIGHT_STATUS_BARS
                         | android.view.WindowInsetsController.APPEARANCE_LIGHT_NAVIGATION_BARS;
-                controller.setSystemBarsAppearance(appearance, appearance);
+                controller.setSystemBarsAppearance(0, appearance);
             }
         }
-        headlineTypeface = Typeface.create("monospace", Typeface.BOLD);
-        bodyTypeface = Typeface.create("monospace", Typeface.NORMAL);
-        monoTypeface = Typeface.create("monospace", Typeface.BOLD);
+        headlineTypeface = loadFont("fonts/Chivo.ttf", 700, Typeface.DEFAULT_BOLD);
+        bodyTypeface = loadFont("fonts/Chivo.ttf", 400, Typeface.DEFAULT);
+        monoTypeface = loadFont("fonts/JetBrainsMono.ttf", 500, Typeface.MONOSPACE);
         preferences = getSharedPreferences("thermabio-local", MODE_PRIVATE);
         defineInputs();
         buildInterface();
@@ -202,14 +200,14 @@ public class MainActivity extends Activity {
         brand.setBackground(rounded(PAPER, 2, LINE));
         TextView mark = text("TB", 17, INK, true);
         mark.setGravity(Gravity.CENTER);
-        mark.setTextColor(Color.WHITE);
+        mark.setTextColor(ON_TEAL);
         mark.setBackground(rounded(TEAL, 14, null));
         brand.addView(mark, new LinearLayout.LayoutParams(dp(44), dp(44)));
         LinearLayout brandCopy = new LinearLayout(this);
         brandCopy.setOrientation(LinearLayout.VERTICAL);
         brandCopy.setPadding(dp(12), 0, 0, 0);
         brandCopy.addView(text("THERMABIO", 19, INK, true));
-        brandCopy.addView(text("INGENIERÍA DE BIOPROCESOS", 9, MUTED, true));
+        brandCopy.addView(text("BIOPROCESS ENGINEERING  ●  LOCAL", 9, TEAL, true));
         brand.addView(brandCopy, new LinearLayout.LayoutParams(0, -2, 1));
         Button reset = smallButton("Restablecer");
         reset.setOnClickListener(v -> resetInputs());
@@ -222,7 +220,7 @@ public class MainActivity extends Activity {
         TextView eyebrow = text("DISEÑO DE PROCESO  ·  CÁLCULO LOCAL", 10, TEAL, true);
         eyebrow.setLetterSpacing(0.08f);
         hero.addView(eyebrow, margins(0, 0, 0, 8));
-        TextView title = text("Serpentín de\nenfriamiento", 28, INK, true);
+        TextView title = text("Serpentín de\nenfriamiento", 26, INK, true);
         title.setLineSpacing(dp(1), 0.98f);
         hero.addView(title, margins(0, 0, 0, 7));
         TextView intro = text("Balance térmico y dimensionamiento preliminar para biorreactores.", 13, MUTED, false);
@@ -263,7 +261,7 @@ public class MainActivity extends Activity {
         calculate.setTextSize(16);
         calculate.setAllCaps(false);
         calculate.setTypeface(headlineTypeface);
-        calculate.setTextColor(Color.WHITE);
+        calculate.setTextColor(ON_TEAL);
         calculate.setBackground(rounded(TEAL, 2, LINE));
         calculate.setElevation(dp(2));
         calculate.setPadding(dp(18), dp(13), dp(18), dp(13));
@@ -344,7 +342,7 @@ public class MainActivity extends Activity {
                 equationText("L_requerida=A_o/(π·Do); A_instalada=π·Do·L_instalada"),
                 equationLine(equationText("Q_capacidad = U_o · A_instalada · ΔT_lm")),
                 equationText("Suficiencia térmica = Q_capacidad / Q_diseño"));
-        addMethodBlock(method, "05 / GEOMETRÍA Y CAÍDA DE PRESIÓN", Color.BLACK,
+        addMethodBlock(method, "05 / GEOMETRÍA Y CAÍDA DE PRESIÓN", INK,
                 equationText("D_i = D_o − 2 t_pared"),
                 equationText("D_hélice + D_o + 2 holgura ≤ D_tanque"),
                 equationText("L_vuelta = √[(π · D_hélice)² + paso²]"),
@@ -367,7 +365,7 @@ public class MainActivity extends Activity {
                 equationText("Qcapacidad=Uo·Ainstalada·ΔTlm; suficiencia=Qcapacidad/Qdiseño"));
         LinearLayout assumptions = card();
         TextView assumptionsTitle = text("SUPUESTOS Y LÍMITES", 16, INK, true);
-        assumptionsTitle.setBackground(rounded(MAGENTA, 0, INK));
+        assumptionsTitle.setBackground(rounded(Color.rgb(41, 42, 45), 6, LINE));
         assumptionsTitle.setPadding(dp(8), dp(6), dp(8), dp(6));
         assumptions.addView(assumptionsTitle, margins(0, 0, 0, 8));
         addAssumptionRow(assumptions, "Caldo perfectamente mezclado a temperatura uniforme; sin gradientes térmicos.", TEAL);
@@ -382,7 +380,7 @@ public class MainActivity extends Activity {
         methodologyScreen.addView(assumptions, margins(0, 0, 0, 14));
         Button toCalculator = smallButton("Ir a la calculadora  →");
         toCalculator.setBackground(projected(TEAL));
-        toCalculator.setTextColor(Color.WHITE);
+        toCalculator.setTextColor(ON_TEAL);
         toCalculator.setOnClickListener(v -> showScreen(0));
         methodologyScreen.addView(toCalculator, margins(0, 0, 0, 14));
 
@@ -400,10 +398,10 @@ public class MainActivity extends Activity {
         navigation.setPadding(dp(7), dp(6), dp(7), dp(6));
         navigation.setBackground(rounded(PAPER, 1, LINE));
         navigation.setElevation(dp(5));
-        addNavigationItem(navigation, "Calculadora", TEAL, 0);
-        addNavigationItem(navigation, "Resultados", YELLOW, 1);
-        addNavigationItem(navigation, "Método", MAGENTA, 2);
-        addNavigationItem(navigation, "Modelo 3D", TEAL, 3);
+        addNavigationItem(navigation, "Módulos", TEAL, 0);
+        addNavigationItem(navigation, "Simulación", YELLOW, 1);
+        addNavigationItem(navigation, "Fórmulas", MAGENTA, 2);
+        addNavigationItem(navigation, "Serpentín 3D", TEAL, 3);
         FrameLayout.LayoutParams navParams = new FrameLayout.LayoutParams(-1, dp(70), Gravity.BOTTOM);
         navParams.setMargins(dp(12), 0, dp(12), dp(8));
         root.addView(navigation, navParams);
@@ -414,15 +412,15 @@ public class MainActivity extends Activity {
         LinearLayout block = new LinearLayout(this);
         block.setOrientation(LinearLayout.VERTICAL);
         block.setPadding(dp(10), dp(8), dp(10), dp(8));
-        block.setBackground(rounded(PAPER, 16, LINE));
-        TextView heading = text(title, 11, accent == Color.BLACK ? INK : accent, true);
-        heading.setBackground(rounded(softAccent(accent), 10, null));
+        block.setBackground(rounded(PAPER, 8, LINE));
+        TextView heading = text(title, 11, accent == INK ? INK : accent, true);
+        heading.setBackground(rounded(softAccent(accent), 4, null));
         heading.setPadding(dp(10), dp(8), dp(10), dp(8));
         block.addView(heading);
         LinearLayout equationPanel = new LinearLayout(this);
         equationPanel.setOrientation(LinearLayout.VERTICAL);
         equationPanel.setPadding(dp(5), dp(6), dp(5), dp(6));
-        equationPanel.setBackground(rounded(AMBER_SOFT, 1, LINE));
+        equationPanel.setBackground(rounded(Color.rgb(13, 14, 17), 6, LINE));
         for (View equation : equations) equationPanel.addView(equation, new LinearLayout.LayoutParams(-1, -2));
         block.addView(equationPanel, margins(0, 5, 0, 0));
         parent.addView(block, margins(0, 0, 0, 8));
@@ -507,7 +505,7 @@ public class MainActivity extends Activity {
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(dp(7), dp(7), dp(7), dp(7));
-        row.setBackground(rounded(AMBER_SOFT, 1, LINE));
+        row.setBackground(rounded(Color.rgb(41, 42, 45), 4, LINE));
         TextView mark = text("✓", 13, accent, true);
         mark.setGravity(Gravity.CENTER);
         mark.setBackground(rounded(softAccent(accent), 9, null));
@@ -523,19 +521,20 @@ public class MainActivity extends Activity {
         if (accent == TEAL) return TEAL_SOFT;
         if (accent == MAGENTA) return CORAL_SOFT;
         if (accent == YELLOW) return AMBER_SOFT;
-        return Color.rgb(237, 242, 245);
+        return Color.rgb(41, 42, 45);
     }
 
     private void addNavigationItem(LinearLayout parent, String title, int accent, int destination) {
         Button button = new Button(this);
-        button.setText(title);
-        button.setTextSize(10.5f);
+        String[] icons = {"▦", "⌁", "Σ", "◉"};
+        button.setText(icons[destination] + "\n" + title);
+        button.setTextSize(9.5f);
         button.setTextColor(MUTED);
         button.setAllCaps(false);
-        button.setMinHeight(dp(50));
+        button.setMinHeight(dp(54));
         button.setTypeface(headlineTypeface);
         button.setPadding(dp(2), 0, dp(2), 0);
-        button.setBackground(rounded(Color.TRANSPARENT, 14, null));
+        button.setBackground(rounded(Color.TRANSPARENT, 8, null));
         button.setGravity(Gravity.CENTER);
         navigationButtons[destination] = button;
         styleNavigationButton(button, destination == currentScreen);
@@ -548,7 +547,7 @@ public class MainActivity extends Activity {
     private void styleNavigationButton(Button button, boolean selected) {
         button.setTextColor(selected ? TEAL : MUTED);
         button.setTypeface(headlineTypeface, selected ? Typeface.BOLD : Typeface.NORMAL);
-        button.setBackground(rounded(selected ? TEAL_SOFT : Color.TRANSPARENT, 14, null));
+        button.setBackground(rounded(selected ? TEAL_SOFT : Color.TRANSPARENT, 8, selected ? TEAL : null));
     }
 
     private void addBioreactorResultsCard(LinearLayout parent) {
@@ -562,7 +561,7 @@ public class MainActivity extends Activity {
         module.addView(coilSchematic());
         Button explore = smallButton("Explorar modelo 3D  →");
         explore.setBackground(projected(TEAL));
-        explore.setTextColor(Color.WHITE);
+        explore.setTextColor(ON_TEAL);
         explore.setOnClickListener(v -> showScreen(3));
         module.addView(explore, margins(0, 8, 0, 0));
         parent.addView(module, margins(0, 0, 0, 4));
@@ -580,7 +579,7 @@ public class MainActivity extends Activity {
         module.addView(note, margins(2, 0, 2, 8));
 
         bioprocessWebView = new WebView(this);
-        bioprocessWebView.setBackgroundColor(PAPER);
+        bioprocessWebView.setBackgroundColor(BG);
         bioprocessWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         bioprocessWebView.setVerticalScrollBarEnabled(false);
         bioprocessWebView.setHorizontalScrollBarEnabled(false);
@@ -731,7 +730,7 @@ public class MainActivity extends Activity {
         brand.setBackground(rounded(PAPER, 1, LINE));
         TextView mark = text("TB", 17, INK, true);
         mark.setGravity(Gravity.CENTER);
-        mark.setTextColor(Color.WHITE);
+        mark.setTextColor(ON_TEAL);
         mark.setBackground(rounded(TEAL, 14, null));
         brand.addView(mark, new LinearLayout.LayoutParams(dp(42), dp(42)));
         LinearLayout copy = new LinearLayout(this);
@@ -747,7 +746,7 @@ public class MainActivity extends Activity {
         heading.setBackground(rounded(PAPER, 1, LINE));
         screen.addView(heading, margins(0, 0, 0, 5));
         TextView caption = text(subtitle, 10, MUTED, true);
-        caption.setTextColor(PAPER);
+        caption.setTextColor(MUTED);
         caption.setLetterSpacing(0.04f);
         screen.addView(caption, margins(0, 0, 0, 16));
     }
@@ -897,14 +896,15 @@ public class MainActivity extends Activity {
         String js = "(function(){if(!document.body)return;document.body.dataset.theme='light';"
                 + "var s=document.getElementById('thermabioNativeStyle');if(!s){s=document.createElement('style');"
                 + "s.id='thermabioNativeStyle';document.head.appendChild(s);}"
-                + "s.textContent='html,body{margin:0!important;background:#6f7152!important;color:#25261d!important;font-family:ui-monospace,monospace!important}"
-                + ".iso[data-theme=light]{--anatomy-page:#6f7152;--anatomy-card:#edebcb;--anatomy-paper:#edebcb;--anatomy-face:#e2dfb8;--anatomy-top:#f4f0d2;--anatomy-text:#41432f;--anatomy-strong:#25261d;--anatomy-muted:#555741;--anatomy-hi:#25261d;--anatomy-mid:#555741;--anatomy-lo:#77795a;--anatomy-faint:#b2b18b;--anatomy-lit:#555b39;--anatomy-halo:#8a8b6c;--anatomy-dot:#555b39;--anatomy-red:#786947;--anatomy-green:#555b39;--anatomy-blue:#62674b}"
+                + "s.textContent='html,body{margin:0!important;background:#121316!important;color:#e3e2e6!important;font-family:Chivo,Arial,sans-serif!important}"
+                + "@font-face{font-family:Chivo;src:url(file:///android_asset/fonts/Chivo.ttf)}@font-face{font-family:JetBrainsMono;src:url(file:///android_asset/fonts/JetBrainsMono.ttf)}"
+                + ".iso[data-theme=light]{--anatomy-page:#121316;--anatomy-card:#1f1f23;--anatomy-paper:#1f1f23;--anatomy-face:#292a2d;--anatomy-top:#343538;--anatomy-text:#bbc9cb;--anatomy-strong:#e3e2e6;--anatomy-muted:#859395;--anatomy-hi:#e3e2e6;--anatomy-mid:#bbc9cb;--anatomy-lo:#3c494b;--anatomy-faint:#3f4147;--anatomy-lit:#20c9d8;--anatomy-halo:#3c494b;--anatomy-dot:#20c9d8;--anatomy-red:#ffb4ab;--anatomy-green:#51dea2;--anatomy-blue:#aeb0ff}"
                 + ".app{max-width:none!important;padding:10px 8px 18px!important}"
                 + ".layout{display:block!important}.stage{position:static!important}"
                 + ".top{display:flex!important;justify-content:flex-end!important;padding:0 4px 8px!important}.top>div{display:none!important}"
-                + ".btn{border-radius:0!important;border:2px solid #303124!important;background:#edebcb!important;color:#25261d!important;box-shadow:3px 3px 0 #8a8b6c!important;font-family:ui-monospace,monospace!important}"
-                + ".iso-plate,.side{border-radius:0!important;border:2px solid #303124!important;box-shadow:3px 3px 0 #8a8b6c!important}"
-                + ".stagecard{position:relative!important;overflow:hidden!important}.tb-zoom{position:absolute;z-index:20;right:10px;bottom:10px;display:flex;align-items:center;gap:5px;padding:5px;border:2px solid #303124;border-radius:0;background:#edebcb;box-shadow:3px 3px 0 #8a8b6c}.tb-zoom button{min-width:38px;height:36px;border:2px solid #303124;border-radius:0;background:#555b39;color:#f3f0d2;font-size:16px;font-weight:700}.tb-zoom button.tb-zoom-reset{min-width:52px;font-size:12px}"
+                + ".btn{border-radius:6px!important;border:1px solid #3f4147!important;background:#292a2d!important;color:#e3e2e6!important;box-shadow:none!important;font-family:JetBrainsMono,monospace!important}"
+                + ".iso-plate,.side{border-radius:8px!important;border:1px solid #3f4147!important;box-shadow:none!important}"
+                + ".stagecard{position:relative!important;overflow:hidden!important}.tb-zoom{position:absolute;z-index:20;right:10px;bottom:10px;display:flex;align-items:center;gap:5px;padding:5px;border:1px solid #3f4147;border-radius:6px;background:#1f1f23}.tb-zoom button{min-width:38px;height:36px;border:1px solid #3f4147;border-radius:4px;background:#20c9d8;color:#00363b;font-size:16px;font-weight:700}.tb-zoom button.tb-zoom-reset{min-width:52px;font-size:12px}"
                 + ".native-preview .app{height:100%!important;padding:0!important}"
                 + ".native-preview .top,.native-preview .bar,.native-preview .tshow,.native-preview .side,.native-preview .iso-legend{display:none!important}"
                 + ".native-preview .layout,.native-preview .stage,.native-preview .iso-figure,.native-preview .stagecard,.native-preview #fig{height:100%!important;margin:0!important}"
@@ -989,7 +989,7 @@ public class MainActivity extends Activity {
         TextView unit = text(spec.unit, 10, MUTED, false);
         unit.setGravity(Gravity.CENTER_VERTICAL | Gravity.RIGHT);
         int unitAccent = spec.group.equals("Temperaturas del proceso") ? TEAL_SOFT :
-                spec.group.equals("Propiedades del refrigerante") ? Color.rgb(237, 242, 245) :
+                spec.group.equals("Propiedades del refrigerante") ? Color.rgb(41, 42, 45) :
                 spec.group.equals("Geometría helicoidal") ? CORAL_SOFT : AMBER_SOFT;
         unit.setTextColor(MUTED);
         unit.setBackground(rounded(unitAccent, 1, LINE));
@@ -1092,7 +1092,7 @@ public class MainActivity extends Activity {
                 } catch (IllegalArgumentException error) {
                     solved[0] = Double.NaN;
                     result.setText("Revisa los datos: " + error.getMessage());
-                    result.setTextColor(MAGENTA);
+                    result.setTextColor(ERROR);
                     apply.setEnabled(false);
                 }
             };
@@ -1145,7 +1145,7 @@ public class MainActivity extends Activity {
         } catch (IllegalArgumentException ex) {
             resultValues.clear();
             statusText.setText(ex.getMessage());
-        statusText.setTextColor(MAGENTA);
+        statusText.setTextColor(ERROR);
             summaryGrid.removeAllViews();
             resultRows.removeAllViews();
             if (calculatorSummaryGrid != null) calculatorSummaryGrid.removeAllViews();
@@ -1419,7 +1419,7 @@ public class MainActivity extends Activity {
         LinearLayout layout = new LinearLayout(this);
         layout.setOrientation(LinearLayout.VERTICAL);
         layout.setPadding(dp(16), dp(16), dp(16), dp(16));
-        layout.setBackground(rounded(PAPER, 18, LINE));
+        layout.setBackground(rounded(PAPER, 8, LINE));
         return layout;
     }
     private TextView text(String value, float size, int color, boolean bold) {
@@ -1446,13 +1446,13 @@ public class MainActivity extends Activity {
         return button;
     }
     private GradientDrawable rounded(int color, int radius, Integer stroke) {
-        GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(dp(Math.min(radius, 2)));
-        if (stroke != null) d.setStroke(dp(2), stroke);
+        GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(dp(Math.min(radius, 12)));
+        if (stroke != null) d.setStroke(dp(1), stroke);
         return d;
     }
     private Drawable projected(int color) {
         LayerDrawable projection = new LayerDrawable(new Drawable[]{
-                new ColorDrawable(Color.rgb(138, 139, 108)), rounded(color, 2, LINE)
+                new ColorDrawable(Color.rgb(41, 42, 45)), rounded(color, 2, LINE)
         });
         projection.setLayerInset(0, 0, dp(2), 0, 0);
         return projection;
