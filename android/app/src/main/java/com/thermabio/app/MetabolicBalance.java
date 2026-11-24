@@ -3,32 +3,31 @@ package com.thermabio.app;
 final class MetabolicBalance {
     private MetabolicBalance() {}
 
-    static double solve(String target, double qTotal, double qMet, double volume, double agitation) {
+    static double solve(String target, double qTotal, double qMet, double volume, double agitation, double phiD, double qOther) {
+        requireFraction(phiD);
+        requireNonnegative(agitation, "La potencia de agitación");
+        finite(qTotal);
+        finite(qMet);
+        finite(qOther);
         switch (target) {
             case "qTotal":
-                requireNonnegative(qMet, "El calor metabólico específico");
                 requirePositive(volume, "El volumen de caldo");
-                requireNonnegative(agitation, "La potencia de agitación");
-                return finite(qMet * volume + agitation);
+                return finite(qMet * volume + phiD * agitation + qOther);
             case "qMet":
-                requireNonnegative(qTotal, "La carga térmica total");
-                requireNonnegative(agitation, "La potencia de agitación");
                 requirePositive(volume, "El volumen de caldo");
-                if (qTotal < agitation) throw new IllegalArgumentException("La carga total no puede ser menor que la potencia de agitación.");
-                return finite((qTotal - agitation) / volume);
+                return finite((qTotal - phiD * agitation - qOther) / volume);
             case "volume":
-                requireNonnegative(qTotal, "La carga térmica total");
-                requireNonnegative(agitation, "La potencia de agitación");
-                requirePositive(qMet, "El calor metabólico específico");
-                if (qTotal < agitation) throw new IllegalArgumentException("La carga total no puede ser menor que la potencia de agitación.");
-                return finite((qTotal - agitation) / qMet);
+                double heatPerVolume = qTotal - phiD * agitation - qOther;
+                if (qMet == 0) throw new IllegalArgumentException("q_met debe ser distinto de cero para despejar el volumen.");
+                double volume = finite(heatPerVolume / qMet);
+                requirePositive(volume, "El volumen calculado");
+                return volume;
             case "agitation":
-                requireNonnegative(qTotal, "La carga térmica total");
-                requireNonnegative(qMet, "El calor metabólico específico");
                 requirePositive(volume, "El volumen de caldo");
-                double metabolic = qMet * volume;
-                if (qTotal < metabolic) throw new IllegalArgumentException("La carga total no puede ser menor que q̇_met · V_caldo; resultaría una potencia de agitación negativa.");
-                return finite(qTotal - metabolic);
+                if (phiD == 0) throw new IllegalArgumentException("φd debe ser mayor que cero para despejar la potencia de agitación.");
+                double power = finite((qTotal - qMet * volume - qOther) / phiD);
+                requireNonnegative(power, "La potencia calculada");
+                return power;
             default:
                 throw new IllegalArgumentException("Selecciona una de las tres entradas que quieres despejar.");
         }
@@ -40,6 +39,10 @@ final class MetabolicBalance {
 
     private static void requireNonnegative(double value, String label) {
         if (!Double.isFinite(value) || value < 0) throw new IllegalArgumentException(label + " debe ser cero o mayor.");
+    }
+
+    private static void requireFraction(double value) {
+        if (!Double.isFinite(value) || value < 0 || value > 1) throw new IllegalArgumentException("φd debe estar entre 0 y 1.");
     }
 
     private static double finite(double value) {

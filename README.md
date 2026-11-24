@@ -2,9 +2,9 @@
 
 Aplicación Android que empaqueta la interfaz interactiva del biorreactor en un APK instalable. La interfaz se ejecuta desde archivos locales.
 
-**Descarga:** [ThermaBio Android 1.7.3](https://github.com/eslaking289/serpentin-biorreactor/releases/download/apk-v1.7.3/ThermaBio-Android.apk).
+**Descarga:** [ThermaBio Android 1.7.4](https://github.com/eslaking289/serpentin-biorreactor/releases/download/apk-v1.7.4/ThermaBio-Android.apk).
 
-La APK une las pantallas de ThermaBio (calculadora metabólica con despejes, resultados y metodología) con el modelo 3D interactivo. Resultados y Modelo 3D comparten la misma vista y los resultados nativos actualizan su geometría y condiciones térmicas. La pantalla Modelo 3D incluye accesos directos a Modelo, Componentes, Parámetros y Cálculos, además de zoom con pellizco y botones. La vista se carga cuando se abre por primera vez; la app funciona desde recursos locales, sin navegador externo ni permiso de Internet.
+La APK une la calculadora térmica y biológica con resultados, metodología y el modelo 3D interactivo. El análisis de bioproceso está integrado como una sección de la calculadora: al aplicar el balance, sus cargas y resultados pasan al dimensionamiento y aparecen en el informe. Los parámetros están organizados en paneles verticales amplios. La interfaz usa una paleta oliva y marfil, contornos rectos y tipografía monoespaciada inspirados en la referencia retro. El modelo 3D conserva el `index.html` original, con accesos a Modelo, Componentes, Parámetros y Cálculos, zoom con pellizco y botones. La app funciona desde recursos locales, sin navegador externo ni permiso de Internet.
 
 ## Instalar
 
@@ -25,7 +25,7 @@ El resultado se crea en `android/app/build/outputs/apk/debug/app-debug.apk`. La 
 
 ## Alcance y supuestos
 
-La calculadora principal estima el enfriamiento sensible con las entradas térmicas. El botón **Análisis biológico y de energía** abre el módulo opcional para cinética Monod batch inicial, OUR/OTR, calor metabólico por el método seleccionado, agitación, transferencia del lado del caldo, balance transitorio y caudal requerido de refrigerante. El análisis es complementario y no introduce parámetros biológicos por especie.
+La calculadora principal estima el enfriamiento sensible y admite integrar cinética Monod batch inicial, OUR/OTR, calor metabólico por un método seleccionado, agitación, transferencia del lado del caldo, balance transitorio y refrigerante. El análisis no introduce parámetros biológicos por especie; se completa con valores medidos o fuentes explícitas.
 
 El módulo reutilizable `bioprocess-core.js` calcula Monod con limitación opcional por oxígeno y muerte celular, consumo de sustrato, OUR/OTR, calor con ΔH firmado o equivalente de oxígeno, fracción de potencia de agitación convertida en calor, balance transitorio y refrigerante. No incluye una base de datos biológica ni valores ficticios: los datos de literatura requieren referencia y condiciones experimentales. Es un módulo JavaScript sin DOM; sus unidades de entrada están indicadas en sus claves y se verifica con `node test/bioprocess-verify.js`.
 

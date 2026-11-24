@@ -39,6 +39,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.JavascriptInterface;
+import org.json.JSONObject;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -49,17 +51,17 @@ import java.util.Map;
 
 public class MainActivity extends Activity {
     private static final int CREATE_CSV = 41;
-    private static final int INK = Color.rgb(25, 48, 53);
-    private static final int MUTED = Color.rgb(97, 117, 122);
-    private static final int TEAL = Color.rgb(30, 122, 126);
-    private static final int MAGENTA = Color.rgb(194, 112, 82);
-    private static final int YELLOW = Color.rgb(211, 164, 73);
-    private static final int PAPER = Color.WHITE;
-    private static final int BG = Color.rgb(244, 247, 246);
-    private static final int LINE = Color.rgb(218, 228, 227);
-    private static final int TEAL_SOFT = Color.rgb(231, 243, 241);
-    private static final int CORAL_SOFT = Color.rgb(249, 239, 234);
-    private static final int AMBER_SOFT = Color.rgb(249, 245, 234);
+    private static final int INK = Color.rgb(37, 38, 29);
+    private static final int MUTED = Color.rgb(91, 92, 70);
+    private static final int TEAL = Color.rgb(89, 96, 62);
+    private static final int MAGENTA = Color.rgb(117, 105, 70);
+    private static final int YELLOW = Color.rgb(184, 171, 103);
+    private static final int PAPER = Color.rgb(237, 235, 203);
+    private static final int BG = Color.rgb(111, 113, 82);
+    private static final int LINE = Color.rgb(48, 49, 36);
+    private static final int TEAL_SOFT = Color.rgb(210, 210, 174);
+    private static final int CORAL_SOFT = Color.rgb(220, 211, 174);
+    private static final int AMBER_SOFT = Color.rgb(228, 222, 180);
 
     private static final class Spec {
         final String key, label, unit, group;
@@ -75,6 +77,7 @@ public class MainActivity extends Activity {
     private final Map<String, Double> schematicResults = new LinkedHashMap<>();
     private final Map<String, String> resultValues = new LinkedHashMap<>();
     private final Map<String, String> resultUnits = new LinkedHashMap<>();
+    private final Map<String, String> bioprocessResults = new LinkedHashMap<>();
     private SharedPreferences preferences;
     private LinearLayout resultRows;
     private LinearLayout summaryGrid;
@@ -85,6 +88,7 @@ public class MainActivity extends Activity {
     private final int[] navigationAccents = {TEAL, YELLOW, MAGENTA, TEAL};
     private TextView statusText;
     private WebView modelWebView;
+    private WebView bioprocessWebView;
     private boolean modelWebViewLoaded;
     private boolean modelWebViewReady;
     private boolean modelPreviewMode;
@@ -105,8 +109,8 @@ public class MainActivity extends Activity {
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
-        getWindow().setStatusBarColor(PAPER);
-        getWindow().setNavigationBarColor(PAPER);
+        getWindow().setStatusBarColor(BG);
+        getWindow().setNavigationBarColor(BG);
         View decor = getWindow().getDecorView();
         int systemBarFlags = View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -121,9 +125,9 @@ public class MainActivity extends Activity {
                 controller.setSystemBarsAppearance(appearance, appearance);
             }
         }
-        headlineTypeface = loadFont("fonts/SpaceGrotesk.ttf", 800, Typeface.create("sans-serif-black", Typeface.NORMAL));
-        bodyTypeface = loadFont("fonts/Chivo.ttf", 400, Typeface.create("sans-serif", Typeface.NORMAL));
-        monoTypeface = loadFont("fonts/JetBrainsMono.ttf", 600, Typeface.create("monospace", Typeface.NORMAL));
+        headlineTypeface = Typeface.create("monospace", Typeface.BOLD);
+        bodyTypeface = Typeface.create("monospace", Typeface.NORMAL);
+        monoTypeface = Typeface.create("monospace", Typeface.BOLD);
         preferences = getSharedPreferences("thermabio-local", MODE_PRIVATE);
         defineInputs();
         buildInterface();
@@ -193,6 +197,8 @@ public class MainActivity extends Activity {
 
         LinearLayout brand = new LinearLayout(this);
         brand.setGravity(Gravity.CENTER_VERTICAL);
+        brand.setPadding(dp(10), dp(8), dp(8), dp(8));
+        brand.setBackground(rounded(PAPER, 2, LINE));
         TextView mark = text("TB", 17, INK, true);
         mark.setGravity(Gravity.CENTER);
         mark.setTextColor(Color.WHITE);
@@ -211,7 +217,7 @@ public class MainActivity extends Activity {
 
         LinearLayout hero = card();
         hero.setPadding(dp(20), dp(18), dp(20), dp(20));
-        hero.setBackground(rounded(Color.WHITE, 20, LINE));
+        hero.setBackground(rounded(PAPER, 2, LINE));
         TextView eyebrow = text("DISEÑO DE PROCESO  ·  CÁLCULO LOCAL", 10, TEAL, true);
         eyebrow.setLetterSpacing(0.08f);
         hero.addView(eyebrow, margins(0, 0, 0, 8));
@@ -227,49 +233,37 @@ public class MainActivity extends Activity {
         calculatorSummaryGrid.setOrientation(LinearLayout.VERTICAL);
         page.addView(calculatorSummaryGrid, margins(0, 0, 0, 9));
 
-        LinearLayout formCard = card();
-        page.addView(formCard, margins(0, 0, 0, 16));
         String currentGroup = "";
-        LinearLayout fieldRow = null;
-        int fieldInGroup = 0;
+        LinearLayout groupCard = null;
         for (Spec spec : specs) {
             if (!spec.group.equals(currentGroup)) {
                 currentGroup = spec.group;
-                fieldRow = null;
-                fieldInGroup = 0;
+                groupCard = card();
+                groupCard.setPadding(dp(12), dp(12), dp(12), dp(8));
+                page.addView(groupCard, margins(0, 0, 0, 10));
                 TextView heading = text(currentGroup.toUpperCase(Locale.ROOT), 13, INK, true);
-                heading.setLetterSpacing(0.04f);
-                int groupAccent = currentGroup.equals("Calor metabólico y biomasa") ? AMBER_SOFT : currentGroup.equals("Temperaturas del proceso") ? TEAL_SOFT : currentGroup.equals("Propiedades del refrigerante") ? Color.rgb(237, 242, 245) : CORAL_SOFT;
-                heading.setPadding(dp(12), dp(10), dp(12), dp(10));
+                heading.setLetterSpacing(0.02f);
+                int groupAccent = currentGroup.equals("Calor metabólico y biomasa") ? AMBER_SOFT : currentGroup.equals("Temperaturas del proceso") ? TEAL_SOFT : currentGroup.equals("Propiedades del refrigerante") ? PAPER : CORAL_SOFT;
+                heading.setPadding(dp(9), dp(9), dp(9), dp(9));
                 heading.setTextColor(currentGroup.equals("Transferencia y geometría") || currentGroup.equals("Geometría helicoidal") ? MAGENTA : TEAL);
-                heading.setBackground(rounded(groupAccent, 12, null));
-                formCard.addView(heading, margins(0, 14, 0, 4));
-                TextView note = text(groupNote(currentGroup).toUpperCase(Locale.ROOT), 10, MUTED, true);
-                formCard.addView(note, margins(0, 0, 0, 8));
+                heading.setBackground(rounded(groupAccent, 1, LINE));
+                groupCard.addView(heading, margins(0, 0, 0, 4));
+                TextView note = text(groupNote(currentGroup), 10, MUTED, false);
+                note.setLineSpacing(dp(2), 1f);
+                groupCard.addView(note, margins(0, 0, 0, 8));
             }
-            if (fieldInGroup % 2 == 0) {
-                fieldRow = new LinearLayout(this);
-                fieldRow.setOrientation(LinearLayout.HORIZONTAL);
-                fieldRow.setGravity(Gravity.TOP);
-                formCard.addView(fieldRow, margins(0, 0, 0, 8));
-            }
-            addEditor(fieldRow, spec);
-            fieldInGroup++;
-            if (fieldInGroup % 2 == 1 && specs.indexOf(spec) == specs.size() - 1) {
-                View spacer = new View(this);
-                fieldRow.addView(spacer, new LinearLayout.LayoutParams(0, 1, 1));
-            }
+            addEditor(groupCard, spec);
         }
         addMetabolicBalanceCard(calculatorScreen);
 
         Button calculate = new Button(this);
-        calculate.setText("⚡  CALCULAR DIMENSIONAMIENTO");
+        calculate.setText("CALCULAR DIMENSIONAMIENTO");
         calculate.setTextColor(INK);
         calculate.setTextSize(16);
         calculate.setAllCaps(false);
         calculate.setTypeface(headlineTypeface);
         calculate.setTextColor(Color.WHITE);
-        calculate.setBackground(rounded(TEAL, 16, null));
+        calculate.setBackground(rounded(TEAL, 2, LINE));
         calculate.setElevation(dp(2));
         calculate.setPadding(dp(18), dp(13), dp(18), dp(13));
         calculate.setOnClickListener(v -> {
@@ -322,53 +316,45 @@ public class MainActivity extends Activity {
         method.addView(methodTitle, margins(0, 0, 0, 5));
         method.addView(text("FUNDAMENTO TÉRMICO · CÁLCULO LOCAL", 10, MUTED, true), margins(0, 0, 0, 12));
         addMethodBlock(method, "01 / BALANCE TÉRMICO TOTAL", YELLOW,
-                equationText("Q_met = q_met · V_caldo"),
-                equationText("Q_diseño = Q_met + P_agitación − Q_pérdidas"),
-                equationText("Modelo actual: Q_pérdidas = 0"));
+                equationText("Q_rxn = −r_rxn · V · ΔH_rxn"),
+                equationText("Q_diseño = Q_met + φd · P_agit + Q_feed + Q_otros"),
+                equationText("M · Cp,b · dTb/dt = Q_generado − Q_serpentín − Q_ambiente + Q_alimentación"));
         addMethodBlock(method, "02 / DIFERENCIA MEDIA LOGARÍTMICA", TEAL,
                 equationText("ΔT₁ = T_caldo − T_salida"),
                 equationText("ΔT₂ = T_caldo − T_entrada"),
                 equationLine(equationText("ΔT_lm ="), fraction("ΔT₂ − ΔT₁", "ln(ΔT₂ / ΔT₁)")));
-        addMethodBlock(method, "03 / COEFICIENTE GLOBAL (U) HELICOIDAL", MAGENTA,
+        addMethodBlock(method, "03 / TRANSFERENCIA EN EL TUBO", MAGENTA,
                 equationLine(equationText("ṁ_req ="), fraction("Q_diseño", "C_p · (T_s − T_e)")),
                 equationLine(equationText("v ="), fraction("4ṁ", "ρπD_i²")),
                 equationLine(equationText("Re ="), fraction("4ṁ", "πD_iμ")),
                 equationLine(equationText("Pr ="), fraction("μ · C_p · 1000", "k_f")),
-                equationText("Nu = 3.66, para Re < 2300"),
-                equationText("2300 ≤ Re < 3000: interpolación lineal hasta Nu_Gn(3000, Pr)"),
-                equationLine(equationText("w ="), fraction("Re − 2300", "700"), equationText("limitado entre 0 y 1")),
-                equationText("Nu_trans = (1 − w) · 3.66 + w · Nu_Gn(3000, Pr)"),
-                equationText("Nu_Gn ="),
-                equationLine(fraction("(f_D/8)(Re − 1000)Pr", "1 + 12.7√(f_D/8)[Pr^{2/3} − 1]")),
-                equationLine(equationText("De = Re√(D_i/D_hélice)")),
-                equationLine(equationText("C_h = 1 + w · 3.5 ·"), fraction("D_i", "D_hélice")),
-                equationLine(equationText("h_i ="), fraction("Nu · k_f", "D_i"), equationText("· C_h")));
+                equationText("Nu = 3.66 (pared constante); Nu = 4.36 (flujo constante), laminar"),
+                equationText("Nu turbulento: Gnielinski dentro de su rango de aplicación"),
+                equationLine(equationText("h_i ="), fraction("Nu · k_f", "D_i")),
+                equationText("De = Re√(D_i/D_hélice); se reporta sin corrección helicoidal"));
         addMethodBlock(method, "04 / RESISTENCIAS Y ÁREA EXTERIOR", TEAL,
-                equationLine(equationText("1/U_o ="), fraction("1", "h_o"), equationText("+ R_f +"), fraction("D_o ln(D_o/D_i)", "2 k_p")),
-                equationLine(equationText("+"), fraction("D_o", "D_i · h_i")),
+                equationText("1/U_o = 1/h_o + Rf,o + (D_o/D_i)Rf,i"),
+                equationText("+ D_o·ln(D_o/D_i)/(2k_p) + D_o/(D_i·h_i)"),
                 equationLine(equationText("A_o ="), fraction("1000 · Q_diseño", "U_o · ΔT_lm")),
-                equationLine(equationText("L ="), fraction("A_o", "π · D_o")));
+                equationLine(equationText("Q_capacidad = U_o · A_instalada · ΔT_lm")));
         addMethodBlock(method, "05 / GEOMETRÍA Y CAÍDA DE PRESIÓN", Color.BLACK,
                 equationText("D_i = D_o − 2 t_pared"),
                 equationText("D_hélice + D_o + 2 holgura ≤ D_tanque"),
                 equationText("L_vuelta = √[(π · D_hélice)² + paso²]"),
-                equationLine(equationText("N ="), fraction("L", "L_vuelta"), equationText("· H = N · paso")),
-                equationText("Ajuste vertical: H + D_o ≤ H_tanque"),
-                equationLine(equationText("ΔP ≈ f_D ·"), fraction("L", "D_i"), equationText("·"), fraction("ρ · v²", "2")),
-                equationLine(equationText("f_D ="), fraction("64", "Re"), equationText("si Re ≤ 2300")),
-                equationText("2300 < Re < 4000: interpolación lineal de f_D"),
-                equationText("f_D = [0.79 ln(Re) − 1.64]^{−2}, si Re ≥ 4000"));
+                equationLine(equationText("N_real = ceil(A_req / L_vuelta)")),
+                equationText("H_total = (N_real − 1) · paso + D_o"),
+                equationText("ΔP_total = f_D · (L/D_i) · ρv²/2 + ΣK · ρv²/2 + ρgΔz"));
         LinearLayout assumptions = card();
         TextView assumptionsTitle = text("SUPUESTOS Y LÍMITES", 16, INK, true);
         assumptionsTitle.setBackground(rounded(MAGENTA, 0, INK));
         assumptionsTitle.setPadding(dp(8), dp(6), dp(8), dp(6));
         assumptions.addView(assumptionsTitle, margins(0, 0, 0, 8));
         addAssumptionRow(assumptions, "Caldo perfectamente mezclado a temperatura uniforme; sin gradientes térmicos.", TEAL);
-        addAssumptionRow(assumptions, "q_met se ingresa desde datos o balance, en kW/m³; no lo predice esta app.", YELLOW);
-        addAssumptionRow(assumptions, "Pérdidas de calor al ambiente omitidas: Q_pérdidas = 0.", MAGENTA);
+        addAssumptionRow(assumptions, "Los parámetros biológicos se ingresan con unidades y origen declarados; no hay valores por especie.", YELLOW);
+        addAssumptionRow(assumptions, "OUR y entalpía son métodos alternativos para el calor; no se suman entre sí.", MAGENTA);
         addAssumptionRow(assumptions, "Gnielinski orientativa para 3,000 ≤ Re ≤ 5×10⁶ y 0.5 ≤ Pr ≤ 2,000.", TEAL);
-        addAssumptionRow(assumptions, "Nu laminar = 3.66 para tubo recto desarrollado y pared a temperatura constante; no corrige Dean.", MAGENTA);
-        addAssumptionRow(assumptions, "La mejora helicoidal de Nu es una aproximación, no una validación experimental.", TEAL);
+        addAssumptionRow(assumptions, "Nu laminar y Gnielinski son correlaciones de tubo recto; Dean se informa sin factor añadido.", MAGENTA);
+        addAssumptionRow(assumptions, "Sin fD de serpentín, la presión usa Darcy recto como aproximación y se advierte en resultados.", TEAL);
         addAssumptionRow(assumptions, "μ se convierte de mPa·s a Pa·s; Cp de kJ/(kg·K) a J/(kg·K) para Pr.", YELLOW);
         addAssumptionRow(assumptions, "ΔP de tubo recto equivalente; no incluye curvatura ni pérdidas locales.", YELLOW);
         addAssumptionRow(assumptions, "Estimación preliminar: verificar propiedades, bomba y diseño mecánico por separado.", MAGENTA);
@@ -391,7 +377,7 @@ public class MainActivity extends Activity {
         navigation.setOrientation(LinearLayout.HORIZONTAL);
         navigation.setGravity(Gravity.CENTER);
         navigation.setPadding(dp(7), dp(6), dp(7), dp(6));
-        navigation.setBackground(rounded(Color.WHITE, 18, LINE));
+        navigation.setBackground(rounded(PAPER, 1, LINE));
         navigation.setElevation(dp(5));
         addNavigationItem(navigation, "Calculadora", TEAL, 0);
         addNavigationItem(navigation, "Resultados", YELLOW, 1);
@@ -415,7 +401,7 @@ public class MainActivity extends Activity {
         LinearLayout equationPanel = new LinearLayout(this);
         equationPanel.setOrientation(LinearLayout.VERTICAL);
         equationPanel.setPadding(dp(5), dp(6), dp(5), dp(6));
-        equationPanel.setBackground(rounded(BG, 10, null));
+        equationPanel.setBackground(rounded(AMBER_SOFT, 1, LINE));
         for (View equation : equations) equationPanel.addView(equation, new LinearLayout.LayoutParams(-1, -2));
         block.addView(equationPanel, margins(0, 5, 0, 0));
         parent.addView(block, margins(0, 0, 0, 8));
@@ -500,7 +486,7 @@ public class MainActivity extends Activity {
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
         row.setPadding(dp(7), dp(7), dp(7), dp(7));
-        row.setBackground(rounded(BG, 12, null));
+        row.setBackground(rounded(AMBER_SOFT, 1, LINE));
         TextView mark = text("✓", 13, accent, true);
         mark.setGravity(Gravity.CENTER);
         mark.setBackground(rounded(softAccent(accent), 9, null));
@@ -563,35 +549,92 @@ public class MainActivity extends Activity {
 
     private void addMetabolicBalanceCard(LinearLayout parent) {
         LinearLayout module = card();
-        TextView tag = text("CALCULADORA  /  BALANCE METABÓLICO", 10, INK, true);
-        tag.setTextColor(TEAL);
-        tag.setBackground(rounded(AMBER_SOFT, 9, null));
-        tag.setPadding(dp(8), dp(6), dp(8), dp(6));
-        module.addView(tag, margins(0, 0, 0, 8));
-        module.addView(text("Q̇_diseño = q̇_met · V + φd · P_agit + Q̇_otros", 15, INK, true), margins(0, 0, 0, 5));
-        TextView note = text("Usa «Despejar este dato» en calor metabólico, volumen o potencia para calcular esa entrada. La carga total se actualiza con esos valores.", 12, MUTED, false);
+        module.setPadding(dp(8), dp(8), dp(8), dp(8));
+        TextView tag = text("06  /  BIOPROCESO Y BALANCE DE CALOR", 13, INK, true);
+        tag.setPadding(dp(9), dp(9), dp(9), dp(9));
+        tag.setBackground(rounded(AMBER_SOFT, 1, LINE));
+        module.addView(tag, margins(0, 0, 0, 6));
+        TextView note = text("Completa los datos conocidos. Al aplicar el balance, sus cargas se transfieren a esta calculadora.", 11, MUTED, false);
         note.setLineSpacing(dp(2), 1f);
-        module.addView(note);
-        Button process = smallButton("Análisis biológico y de energía  →");
-        process.setBackground(projected(TEAL));
-        process.setTextColor(Color.WHITE);
-        process.setOnClickListener(v -> showBioprocessDialog());
-        module.addView(process, margins(0, 10, 0, 0));
-        parent.addView(module, margins(0, 4, 0, 16));
+        module.addView(note, margins(2, 0, 2, 8));
+
+        bioprocessWebView = new WebView(this);
+        bioprocessWebView.setBackgroundColor(PAPER);
+        bioprocessWebView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        bioprocessWebView.setVerticalScrollBarEnabled(false);
+        bioprocessWebView.setHorizontalScrollBarEnabled(false);
+        bioprocessWebView.setNestedScrollingEnabled(false);
+        bioprocessWebView.setOnTouchListener((view, event) -> {
+            if (event.getAction() == android.view.MotionEvent.ACTION_MOVE && view.getParent() != null) {
+                view.getParent().requestDisallowInterceptTouchEvent(false);
+            }
+            return false;
+        });
+        bioprocessWebView.getSettings().setJavaScriptEnabled(true);
+        bioprocessWebView.getSettings().setAllowFileAccess(true);
+        bioprocessWebView.addJavascriptInterface(new BioprocessBridge(), "ThermaBioNative");
+        bioprocessWebView.setWebViewClient(new WebViewClient());
+        module.addView(bioprocessWebView, new LinearLayout.LayoutParams(-1, dp(320)));
+        bioprocessWebView.loadUrl("file:///android_asset/bioprocess.html");
+        parent.addView(module, margins(0, 0, 0, 14));
     }
 
-    private void showBioprocessDialog() {
-        WebView view = new WebView(this);
-        view.setBackgroundColor(BG);
-        view.getSettings().setJavaScriptEnabled(true);
-        view.loadUrl("file:///android_asset/bioprocess.html");
-        AlertDialog dialog = new AlertDialog.Builder(this)
-                .setTitle("Análisis de bioproceso")
-                .setView(view)
-                .setPositiveButton("Cerrar", null)
-                .create();
-        dialog.show();
-        dialog.getWindow().setLayout(-1, (int) (getResources().getDisplayMetrics().heightPixels * 0.86));
+    private final class BioprocessBridge {
+        @JavascriptInterface public void setContentHeight(int cssHeight) {
+            runOnUiThread(() -> {
+                if (bioprocessWebView == null) return;
+                int height = Math.max(dp(300), Math.min(dp(4800), dp(cssHeight)));
+                View view = bioprocessWebView;
+                android.view.ViewGroup.LayoutParams params = view.getLayoutParams();
+                if (params != null && params.height != height) {
+                    params.height = height;
+                    view.setLayoutParams(params);
+                }
+            });
+        }
+
+        @JavascriptInterface public void applyHeat(String json) {
+            runOnUiThread(() -> {
+                try {
+                    JSONObject data = new JSONObject(json);
+                    double volume = data.getDouble("volumeM3");
+                    if (!Double.isFinite(volume) || volume <= 0) throw new IllegalArgumentException("Volumen no válido.");
+                    bioprocessResults.clear();
+                    JSONObject summary = data.optJSONObject("summary");
+                    if (summary != null) {
+                        java.util.Iterator<String> keys = summary.keys();
+                        while (keys.hasNext()) {
+                            String key = keys.next();
+                            bioprocessResults.put(key, summary.optString(key, "—"));
+                        }
+                    }
+                    initializing = true;
+                    setEditorValue("volume", volume);
+                    setEditorValue("qMet", data.isNull("metabolicKW") ? 0 : data.getDouble("metabolicKW") / volume);
+                    setEditorValue("agitation", data.isNull("agitationPowerKW") ? 0 : data.getDouble("agitationPowerKW"));
+                    setEditorValue("phiD", data.isNull("agitationHeatFraction") ? 1 : data.getDouble("agitationHeatFraction"));
+                    setEditorValue("qOther", data.isNull("otherKW") ? 0 : data.getDouble("otherKW"));
+                    initializing = false;
+                    calculate(false);
+                    if (resultValues.isEmpty()) {
+                        Toast.makeText(MainActivity.this, "Balance aplicado, pero revisa los parámetros térmicos antes de continuar.", Toast.LENGTH_LONG).show();
+                    } else {
+                        Toast.makeText(MainActivity.this, "Balance integrado en el cálculo del serpentín.", Toast.LENGTH_SHORT).show();
+                        showScreen(1);
+                    }
+                } catch (Exception error) {
+                    initializing = false;
+                    Toast.makeText(MainActivity.this, "No se pudo integrar el balance: " + error.getMessage(), Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+    }
+
+    private void setEditorValue(String key, double value) {
+        if (!Double.isFinite(value) || !editors.containsKey(key)) return;
+        String text = Double.toString(value);
+        editors.get(key).setText(text);
+        preferences.edit().putString(key, text).apply();
     }
 
     private LinearLayout newScreen() {
@@ -604,6 +647,8 @@ public class MainActivity extends Activity {
     private void addScreenHeader(LinearLayout screen, String title, String subtitle) {
         LinearLayout brand = new LinearLayout(this);
         brand.setGravity(Gravity.CENTER_VERTICAL);
+        brand.setPadding(dp(10), dp(8), dp(8), dp(8));
+        brand.setBackground(rounded(PAPER, 1, LINE));
         TextView mark = text("TB", 17, INK, true);
         mark.setGravity(Gravity.CENTER);
         mark.setTextColor(Color.WHITE);
@@ -618,8 +663,11 @@ public class MainActivity extends Activity {
         screen.addView(brand, margins(0, 4, 0, 14));
         TextView heading = text(title, 23, INK, true);
         heading.setLineSpacing(dp(1), 1f);
+        heading.setPadding(dp(10), dp(9), dp(10), dp(9));
+        heading.setBackground(rounded(PAPER, 1, LINE));
         screen.addView(heading, margins(0, 0, 0, 5));
         TextView caption = text(subtitle, 10, MUTED, true);
+        caption.setTextColor(PAPER);
         caption.setLetterSpacing(0.04f);
         screen.addView(caption, margins(0, 0, 0, 16));
     }
@@ -665,7 +713,7 @@ public class MainActivity extends Activity {
         sections.setOrientation(LinearLayout.HORIZONTAL);
         sections.setGravity(Gravity.CENTER);
         sections.setPadding(dp(4), dp(4), dp(4), dp(4));
-        sections.setBackground(rounded(Color.WHITE, 16, LINE));
+        sections.setBackground(rounded(PAPER, 1, LINE));
         String[] sectionNames = {"Modelo", "Componentes", "Parámetros", "Cálculos"};
         for (int i = 0; i < sectionNames.length; i++) {
             final int section = i;
@@ -686,7 +734,7 @@ public class MainActivity extends Activity {
         }
         parent.addView(sections, margins(0, 0, 0, 10));
         modelFullFrame = new FrameLayout(this);
-        modelFullFrame.setBackground(rounded(Color.WHITE, 18, LINE));
+        modelFullFrame.setBackground(rounded(PAPER, 1, LINE));
         float density = getResources().getDisplayMetrics().density;
         int viewportHeight = Math.round(getResources().getDisplayMetrics().heightPixels / density) - 220;
         parent.addView(modelFullFrame, new LinearLayout.LayoutParams(-1, dp(Math.max(640, Math.min(900, viewportHeight)))));
@@ -769,14 +817,14 @@ public class MainActivity extends Activity {
         String js = "(function(){if(!document.body)return;document.body.dataset.theme='light';"
                 + "var s=document.getElementById('thermabioNativeStyle');if(!s){s=document.createElement('style');"
                 + "s.id='thermabioNativeStyle';document.head.appendChild(s);}"
-                + "s.textContent='html,body{margin:0!important;background:#f4f7f6!important}"
-                + ".iso[data-theme=light]{--anatomy-page:#f4f7f6;--anatomy-card:#ffffff;--anatomy-paper:#ffffff;--anatomy-face:#ffffff;--anatomy-top:#f7faf9;--anatomy-text:#61757a;--anatomy-strong:#193035;--anatomy-muted:#71858a;--anatomy-hi:#193035;--anatomy-mid:#71858a;--anatomy-lo:#cad7d7;--anatomy-faint:#e7eeed;--anatomy-lit:#1e7a7e;--anatomy-halo:#bdcfce;--anatomy-dot:#1e7a7e;--anatomy-red:#c27052;--anatomy-green:#1e7a7e;--anatomy-blue:#67879a}"
+                + "s.textContent='html,body{margin:0!important;background:#6f7152!important;color:#25261d!important;font-family:ui-monospace,monospace!important}"
+                + ".iso[data-theme=light]{--anatomy-page:#6f7152;--anatomy-card:#edebcb;--anatomy-paper:#edebcb;--anatomy-face:#e2dfb8;--anatomy-top:#f4f0d2;--anatomy-text:#41432f;--anatomy-strong:#25261d;--anatomy-muted:#555741;--anatomy-hi:#25261d;--anatomy-mid:#555741;--anatomy-lo:#77795a;--anatomy-faint:#b2b18b;--anatomy-lit:#555b39;--anatomy-halo:#8a8b6c;--anatomy-dot:#555b39;--anatomy-red:#786947;--anatomy-green:#555b39;--anatomy-blue:#62674b}"
                 + ".app{max-width:none!important;padding:10px 8px 18px!important}"
                 + ".layout{display:block!important}.stage{position:static!important}"
                 + ".top{display:flex!important;justify-content:flex-end!important;padding:0 4px 8px!important}.top>div{display:none!important}"
-                + ".btn{border-radius:10px!important;border-color:#d7e2e1!important;box-shadow:0 1px 2px #19303512!important}"
-                + ".iso-plate,.side{border-radius:16px!important;box-shadow:0 2px 10px #19303512!important}"
-                + ".stagecard{position:relative!important;overflow:hidden!important}.tb-zoom{position:absolute;z-index:20;right:12px;bottom:12px;display:flex;align-items:center;gap:5px;padding:5px;border:1px solid #d7e2e1;border-radius:12px;background:#ffffffed;box-shadow:0 2px 8px #19303520}.tb-zoom button{min-width:38px;height:36px;border:0;border-radius:8px;background:#e7f3f1;color:#1e7a7e;font-size:16px;font-weight:700}.tb-zoom button.tb-zoom-reset{min-width:52px;font-size:12px}"
+                + ".btn{border-radius:0!important;border:2px solid #303124!important;background:#edebcb!important;color:#25261d!important;box-shadow:3px 3px 0 #8a8b6c!important;font-family:ui-monospace,monospace!important}"
+                + ".iso-plate,.side{border-radius:0!important;border:2px solid #303124!important;box-shadow:3px 3px 0 #8a8b6c!important}"
+                + ".stagecard{position:relative!important;overflow:hidden!important}.tb-zoom{position:absolute;z-index:20;right:10px;bottom:10px;display:flex;align-items:center;gap:5px;padding:5px;border:2px solid #303124;border-radius:0;background:#edebcb;box-shadow:3px 3px 0 #8a8b6c}.tb-zoom button{min-width:38px;height:36px;border:2px solid #303124;border-radius:0;background:#555b39;color:#f3f0d2;font-size:16px;font-weight:700}.tb-zoom button.tb-zoom-reset{min-width:52px;font-size:12px}"
                 + ".native-preview .app{height:100%!important;padding:0!important}"
                 + ".native-preview .top,.native-preview .bar,.native-preview .tshow,.native-preview .side,.native-preview .iso-legend{display:none!important}"
                 + ".native-preview .layout,.native-preview .stage,.native-preview .iso-figure,.native-preview .stagecard,.native-preview #fig{height:100%!important;margin:0!important}"
@@ -792,7 +840,7 @@ public class MainActivity extends Activity {
 
     private View coilSchematic() {
         modelPreviewFrame = new FrameLayout(this);
-        modelPreviewFrame.setBackground(rounded(Color.WHITE, 16, LINE));
+        modelPreviewFrame.setBackground(rounded(PAPER, 1, LINE));
         float density = getResources().getDisplayMetrics().density;
         int screenWidthDp = Math.round(getResources().getDisplayMetrics().widthPixels / density);
         int diagramHeight = Math.min(420, Math.round((screenWidthDp - 52) * 470f / 620f + 58));
@@ -844,7 +892,7 @@ public class MainActivity extends Activity {
         cell.addView(label, margins(0, 2, 0, 4));
         LinearLayout row = new LinearLayout(this);
         row.setGravity(Gravity.CENTER_VERTICAL);
-        row.setBackground(rounded(Color.WHITE, 12, LINE));
+        row.setBackground(rounded(PAPER, 1, LINE));
         EditText edit = new EditText(this);
         edit.setSingleLine(true);
         edit.setTextSize(15);
@@ -864,7 +912,7 @@ public class MainActivity extends Activity {
                 spec.group.equals("Propiedades del refrigerante") ? Color.rgb(237, 242, 245) :
                 spec.group.equals("Geometría helicoidal") ? CORAL_SOFT : AMBER_SOFT;
         unit.setTextColor(MUTED);
-        unit.setBackground(rounded(unitAccent, 8, null));
+        unit.setBackground(rounded(unitAccent, 1, LINE));
         unit.setPadding(dp(8), dp(5), dp(8), dp(5));
         LinearLayout.LayoutParams unitParams = new LinearLayout.LayoutParams(-2, -2);
         unitParams.setMargins(0, dp(5), dp(5), dp(5));
@@ -879,8 +927,8 @@ public class MainActivity extends Activity {
             solve.setOnClickListener(v -> showMetabolicSolveDialog(spec.key));
             cell.addView(solve, margins(0, 4, 0, 2));
         }
-        LinearLayout.LayoutParams cellParams = new LinearLayout.LayoutParams(0, -2, 1f);
-        cellParams.setMargins(dp(3), 0, dp(5), dp(6));
+        LinearLayout.LayoutParams cellParams = new LinearLayout.LayoutParams(-1, -2);
+        cellParams.setMargins(dp(2), 0, dp(2), dp(12));
         parent.addView(cell, cellParams);
         edit.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -894,20 +942,22 @@ public class MainActivity extends Activity {
     }
 
     private void showMetabolicSolveDialog(String target) {
-        String[] knownKeys = "qMet".equals(target) ? new String[]{"qTotal", "volume", "agitation"} :
-                "volume".equals(target) ? new String[]{"qTotal", "qMet", "agitation"} :
-                        new String[]{"qTotal", "qMet", "volume"};
+        String[] knownKeys = "qMet".equals(target) ? new String[]{"qTotal", "volume", "agitation", "phiD", "qOther"} :
+                "volume".equals(target) ? new String[]{"qTotal", "qMet", "agitation", "phiD", "qOther"} :
+                        new String[]{"qTotal", "qMet", "volume", "phiD", "qOther"};
         Map<String, String> labels = new LinkedHashMap<>();
         labels.put("qTotal", "Carga térmica total conocida (kW)");
         labels.put("qMet", "Calor metabólico específico (kW/m³)");
         labels.put("volume", "Volumen de caldo (m³)");
         labels.put("agitation", "Potencia disipada por agitación (kW)");
+        labels.put("phiD", "Fracción de agitación como calor φd (0–1)");
+        labels.put("qOther", "Otras cargas térmicas (kW)");
         String resultUnit = "qMet".equals(target) ? "kW/m³" : "volume".equals(target) ? "m³" : "kW";
 
         LinearLayout content = new LinearLayout(this);
         content.setOrientation(LinearLayout.VERTICAL);
         content.setPadding(dp(20), dp(4), dp(20), dp(8));
-        TextView equation = text("Q̇_total = q̇_met · V_caldo + P_agitación\nIngresa una carga térmica total conocida. Los otros dos datos se precargan desde la calculadora y puedes editarlos aquí.", 12, MUTED, false);
+        TextView equation = text("Q̇_total = q̇_met · V + φd · P_agit + Q̇_otros\nIngresa la carga total conocida; los valores restantes se precargan y puedes editarlos.", 12, MUTED, false);
         equation.setLineSpacing(dp(3), 1f);
         content.addView(equation, margins(0, 0, 0, 12));
 
@@ -952,7 +1002,9 @@ public class MainActivity extends Activity {
                     double qMet = "qMet".equals(target) ? Double.NaN : dialogNumber(knownInputs.get("qMet"), "El calor metabólico específico");
                     double volume = "volume".equals(target) ? Double.NaN : dialogNumber(knownInputs.get("volume"), "El volumen de caldo");
                     double agitation = "agitation".equals(target) ? Double.NaN : dialogNumber(knownInputs.get("agitation"), "La potencia de agitación");
-                    solved[0] = MetabolicBalance.solve(target, qTotal, qMet, volume, agitation);
+                    double phiD = dialogNumber(knownInputs.get("phiD"), "La fracción de calor de agitación");
+                    double qOther = dialogNumber(knownInputs.get("qOther"), "Otras cargas térmicas");
+                    solved[0] = MetabolicBalance.solve(target, qTotal, qMet, volume, agitation, phiD, qOther);
                     result.setText("Resultado: " + f(solved[0]) + " " + resultUnit);
                     result.setTextColor(INK);
                     apply.setEnabled(true);
@@ -1005,6 +1057,9 @@ public class MainActivity extends Activity {
                 values.put(spec.key, value);
             }
             Map<String, String> result = calculateModel(values);
+            for (Map.Entry<String, String> entry : bioprocessResults.entrySet()) {
+                result.put("Bioproceso · " + entry.getKey(), entry.getValue());
+            }
             renderResults(result);
         } catch (IllegalArgumentException ex) {
             resultValues.clear();
@@ -1237,7 +1292,7 @@ public class MainActivity extends Activity {
                 tile.setOrientation(LinearLayout.VERTICAL);
                 tile.setPadding(dp(12), dp(12), dp(10), dp(12));
                 int accent = navigationAccents[tileIndex % navigationAccents.length];
-                tile.setBackground(rounded(Color.WHITE, 16, LINE));
+                tile.setBackground(rounded(PAPER, 1, LINE));
                 TextView label = text(shortLabels[tileIndex], 9, MUTED, true);
                 label.setLetterSpacing(0.04f);
                 TextView value = text(result.get(key), 18, INK, true);
@@ -1255,6 +1310,7 @@ public class MainActivity extends Activity {
     private void resetInputs() {
         initializing = true;
         preferences.edit().clear().apply();
+        bioprocessResults.clear();
         for (Spec spec : specs) editors.get(spec.key).setText(Double.toString(spec.value));
         initializing = false;
         calculate(false);
@@ -1303,19 +1359,19 @@ public class MainActivity extends Activity {
         Button button = new Button(this);
         button.setText(title); button.setTextSize(12); button.setTextColor(INK); button.setAllCaps(false);
         button.setTypeface(headlineTypeface);
-        int surface = title.toLowerCase(Locale.ROOT).contains("restablecer") ? AMBER_SOFT : Color.WHITE;
+        int surface = title.toLowerCase(Locale.ROOT).contains("restablecer") ? AMBER_SOFT : PAPER;
         button.setBackground(rounded(surface, 12, LINE));
         button.setMinHeight(dp(42));
         return button;
     }
     private GradientDrawable rounded(int color, int radius, Integer stroke) {
-        GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(dp(radius));
-        if (stroke != null) d.setStroke(dp(1), stroke);
+        GradientDrawable d = new GradientDrawable(); d.setColor(color); d.setCornerRadius(dp(Math.min(radius, 2)));
+        if (stroke != null) d.setStroke(dp(2), stroke);
         return d;
     }
     private Drawable projected(int color) {
         LayerDrawable projection = new LayerDrawable(new Drawable[]{
-                new ColorDrawable(Color.rgb(225, 232, 231)), rounded(color, 16, LINE)
+                new ColorDrawable(Color.rgb(138, 139, 108)), rounded(color, 2, LINE)
         });
         projection.setLayerInset(0, 0, dp(2), 0, 0);
         return projection;
