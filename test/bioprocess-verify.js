@@ -30,4 +30,24 @@ assert.throws(() => analyzeProcess({ volumeM3: 1, heatMethod: 'oxygen',
   qO2MolPerGXH: 1, biomassGPerL: 1 }), /YQ\/O2/);
 assert.deepEqual(analyzeProcess({ volumeM3: 1, muMaxPerH: 0.3 }).kinetics.missing,
   ['substrateGPerL', 'ksGPerL', 'biomassGPerL', 'yieldXPerS']);
+
+const oxygenLimited = analyzeProcess({
+  volumeM3: 1, muMaxPerH: 0.5, substrateGPerL: 2, ksGPerL: 1,
+  biomassGPerL: 4, yieldXPerS: 0.5, ko2MolPerL: 1e-4,
+  cLMolPerL: 1e-4, kdPerH: 0.1
+});
+assert.ok(Math.abs(oxygenLimited.kinetics.muPerH - (1 / 6)) < 1e-12);
+assert.ok(Math.abs(oxygenLimited.kinetics.biomassRateGPerLH - (1 / 6 - 0.1) * 4) < 1e-12);
+
+const reaction = analyzeProcess({
+  volumeM3: 1, heatMethod: 'reaction', reactionEnthalpyKJPerMol: -100,
+  substrateConsumptionMolPerH: 36, agitationKW: 2, agitationHeatFraction: 0.25
+});
+assert.ok(Math.abs(reaction.heat.metabolicKW - 1) < 1e-12);
+assert.ok(Math.abs(reaction.heat.agitationKW - 0.5) < 1e-12);
+assert.ok(Math.abs(reaction.heat.totalGeneratedKW - 1.5) < 1e-12);
+
+const coolantOutlet = analyzeProcess({ volumeM3: 1, manualMetabolicKW: 10,
+  coolantMassFlowKgS: 1, coolantCpKJPerKgK: 4, coolantInletTempC: 10 });
+assert.ok(Math.abs(coolantOutlet.coolantOutletTempC - 12.5) < 1e-12);
 console.log('Bioprocess calculations verified.');

@@ -23,22 +23,33 @@
     const x = { ...input };
     const out = { kinetics: null, oxygen: null, heat: null, agitation: null, energy: null, coolant: null, provenance: x.provenance || {} };
 
-    const kineticKeys = ['muMaxPerH', 'substrateGPerL', 'ksGPerL', 'biomassGPerL', 'yieldXPerS', 'maintenanceGPerGXH'];
-    if (kineticKeys.slice(0, 5).some(k => x[k] != null && x[k] !== '') &&
-        kineticKeys.slice(0, 5).every(k => x[k] != null && x[k] !== '')) {
+    const kineticKeys = ['muMaxPerH', 'substrateGPerL', 'ksGPerL', 'biomassGPerL', 'yieldXPerS'];
+    const kineticSupplied = kineticKeys.some(k => x[k] != null && x[k] !== '');
+    const oxygenLimitKeys = ['ko2MolPerL', 'cLMolPerL'];
+    const oxygenLimitSupplied = x.ko2MolPerL != null && x.ko2MolPerL !== '';
+    const kineticsMissing = kineticKeys.filter(k => x[k] == null || x[k] === '');
+    if (oxygenLimitSupplied) kineticsMissing.push(...oxygenLimitKeys.filter(k => x[k] == null || x[k] === ''));
+    if (kineticSupplied && kineticsMissing.length === 0) {
       const muMax = positive(x.muMaxPerH, 'μmax');
       const substrate = optional(x.substrateGPerL, 'S', true);
       const ks = positive(x.ksGPerL, 'Ks');
       const biomass = positive(x.biomassGPerL, 'X');
       const yieldXS = positive(x.yieldXPerS, 'Yx/s');
       const maintenance = optional(x.maintenanceGPerGXH ?? 0, 'ms', true);
-      const mu = muMax * substrate / (ks + substrate);
+      const muSubstrate = muMax * substrate / (ks + substrate);
+      const ko2 = oxygenLimitSupplied ? positive(x.ko2MolPerL, 'KO₂') : null;
+      const dissolvedO2 = oxygenLimitSupplied ? optional(x.cLMolPerL, 'CL O₂', true) : null;
+      const oxygenFactor = oxygenLimitSupplied ? dissolvedO2 / (ko2 + dissolvedO2) : 1;
+      const mu = muSubstrate * oxygenFactor;
+      const death = optional(x.kdPerH ?? 0, 'kd', true);
       const qS = mu / yieldXS + maintenance;
       out.kinetics = { muPerH: mu, qSubstrateGPerGXH: qS, substrateRateGPerLH: qS * biomass,
-        biomassRateGPerLH: mu * biomass, doublingTimeH: Math.LN2 / mu,
-        model: 'Tasa inicial batch a volumen constante; fed-batch y continuo requieren sus balances propios.' };
-    } else if (kineticKeys.slice(0, 5).some(k => x[k] != null && x[k] !== '')) {
-      out.kinetics = { missing: kineticKeys.slice(0, 5).filter(k => x[k] == null || x[k] === '') };
+        grossBiomassRateGPerLH: mu * biomass, deathRateGPerLH: death * biomass,
+        biomassRateGPerLH: (mu - death) * biomass, oxygenLimitationFactor: oxygenFactor,
+        oxygenLimited: oxygenLimitSupplied, doublingTimeH: mu > 0 ? Math.LN2 / mu : null,
+        model: 'Tasa batch inicial a volumen constante; fed-batch y continuo requieren balances propios.' };
+    } else if (kineticSupplied || oxygenLimitSupplied) {
+      out.kinetics = { missing: kineticsMissing.length ? kineticsMissing : kineticKeys };
     }
 
     if (x.qO2MolPerGXH != null || x.kLaPerH != null) {
@@ -56,6 +67,7 @@
       out.oxygen = { OURMolPerLH: OUR, OTRMolPerLH: OTR,
         oxygenMarginMolPerLH: OUR == null || OTR == null ? null : OTR - OUR,
         oxygenSufficient: OUR == null || OTR == null ? null : OTR >= OUR,
+        dissolvedOxygenRateMolPerLH: OUR == null || OTR == null ? null : OTR - OUR,
         basis: 'Concentraciones mol/L y tasas específicas mol/(g·h); confirma coherencia de unidades.' };
     }
 
@@ -69,16 +81,18 @@
       const our = out.oxygen?.OURMolPerLH ?? (qO2 * biomass);
       metabolicKW = y * our * volume * 1000 / 3600; // L × m³ conversion: 1000 L/m³
     } else if (heatMethod === 'reaction') {
-      const enthalpy = Math.abs(finite(x.reactionEnthalpyKJPerMol, 'ΔHrxn'));
+      const enthalpy = finite(x.reactionEnthalpyKJPerMol, 'ΔHrxn');
       if (enthalpy === 0) throw new RangeError('ΔHrxn debe ser distinto de cero.');
       const rate = positive(x.substrateConsumptionMolPerH, 'consumo de sustrato');
-      metabolicKW = enthalpy * rate / 3600;
+      metabolicKW = -enthalpy * rate / 3600;
       out.heatMethodNote = 'El consumo molar de sustrato se ingresa explícitamente; no se calcula entalpía ni estequiometría automáticamente.';
     } else if (x.manualMetabolicKW != null) {
       metabolicKW = optional(x.manualMetabolicKW, 'Qmet manual', true);
     } else if (heatMethod !== 'manual') throw new RangeError('Método de calor metabólico no reconocido.');
 
     let agitationKW = optional(x.agitationKW, 'P_agitación', true);
+    const agitationHeatFraction = optional(x.agitationHeatFraction ?? 1, 'φd', true);
+    if (agitationHeatFraction > 1) throw new RangeError('φd debe estar entre 0 y 1.');
     if (x.powerNumber != null) {
       const rho = positive(x.brothDensityKgM3, 'ρ caldo');
       const speed = positive(x.impellerSpeedPerS, 'N');
@@ -88,6 +102,7 @@
       const reImp = rho * speed * diameter ** 2 / mu;
       agitationKW = np * rho * speed ** 3 * diameter ** 5 / 1000;
       out.agitation = { reynolds: reImp, powerKW: agitationKW,
+        heatKW: agitationKW * agitationHeatFraction, heatFraction: agitationHeatFraction,
         note: 'Np se trata como dato ingresado: depende del impulsor, tanque, Re y aireación.' };
     }
 
@@ -108,29 +123,41 @@
         correlation: 'Doran, Bioprocess Engineering Principles, 2nd ed., capítulo 9, ecuación 9.36. Revisar aplicabilidad y condiciones.' };
     }
 
-    if (metabolicKW != null || agitationKW != null || x.otherHeatKW != null) {
-      const qOther = optional(x.otherHeatKW ?? 0, 'Qotros', true);
-      const qFeed = optional(x.feedSensibleHeatKW ?? 0, 'Qalimentación', true);
-      const generated = (metabolicKW || 0) + (agitationKW || 0) + qOther + qFeed;
-      out.heat = { method: heatMethod, metabolicKW, agitationKW, otherKW: qOther, feedSensibleKW: qFeed, totalGeneratedKW: generated,
-        warning: 'No se suman los métodos de O2 y ΔH: selecciona solo uno para evitar contar dos veces el metabolismo.' };
+    if (metabolicKW != null || agitationKW != null || x.otherHeatKW != null || x.feedSensibleHeatKW != null) {
+      const qOther = finite(x.otherHeatKW ?? 0, 'Qotros');
+      const qFeed = finite(x.feedSensibleHeatKW ?? 0, 'Qalimentación');
+      const agitationHeatKW = (agitationKW || 0) * agitationHeatFraction;
+      const generated = (metabolicKW || 0) + agitationHeatKW + qOther + qFeed;
+      out.heat = { method: heatMethod, metabolicKW,
+        reactionKW: heatMethod === 'reaction' ? metabolicKW : null,
+        agitationPowerKW: agitationKW, agitationHeatFraction,
+        agitationKW: agitationHeatKW, otherKW: qOther, feedSensibleKW: qFeed, totalGeneratedKW: generated,
+        warning: 'OUR y ΔH son métodos alternativos. El calor de reacción conserva el signo de ΔH y usa consumo molar explícito.' };
       if (x.coolingRemovedKW != null || x.brothMassKg != null) {
         const removed = optional(x.coolingRemovedKW ?? 0, 'Qremovido', true);
+        const ambient = optional(x.ambientHeatKW ?? 0, 'Qambiente', true);
         const mass = positive(x.brothMassKg, 'M caldo');
         const cp = positive(x.brothCpKJPerKgK, 'Cp caldo');
         const feedNet = finite(x.feedOutflowSensibleKW ?? 0, 'Qfeeds/outflows');
-        const dTdt = ((generated - removed + feedNet) * 1000) / (mass * cp * 1000);
+        const dTdt = (generated - removed - ambient + feedNet) / (mass * cp);
         out.energy = { dTdtKPerS: dTdt, dTdtKPerH: dTdt * 3600, generatedKW: generated, removedKW: removed,
-          equation: 'M Cp dT/dt = Qgenerated − Qremoved + Qfeeds/outflows' };
+          ambientKW: ambient, feedOutflowKW: feedNet,
+          equation: 'M Cp dT/dt = Qgenerated − Qserpentín − Qambiente + Qalimentación' };
       }
-      const duty = positive(generated, 'Qtotal');
-      if (x.coolantCpKJPerKgK != null && x.coolantDeltaTK != null) {
+      if (generated > 0 && x.coolantCpKJPerKgK != null && x.coolantDeltaTK != null) {
+        const duty = generated;
         const cp = positive(x.coolantCpKJPerKgK, 'Cp refrigerante');
         const dT = positive(x.coolantDeltaTK, 'ΔT refrigerante');
         const massFlow = duty / (cp * dT);
         const density = optional(x.coolantDensityKgM3, 'ρ refrigerante');
         out.coolant = { massFlowKgS: massFlow, volumetricFlowM3S: density == null ? null : massFlow / density,
           volumetricFlowM3H: density == null ? null : massFlow / density * 3600 };
+      }
+      const coolantMass = optional(x.coolantMassFlowKgS, 'caudal másico refrigerante', true);
+      const coolantCp = optional(x.coolantCpKJPerKgK, 'Cp refrigerante');
+      const coolantIn = x.coolantInletTempC == null ? null : finite(x.coolantInletTempC, 'Tin refrigerante');
+      if (coolantMass != null && coolantMass > 0 && coolantCp != null && coolantIn != null) {
+        out.coolantOutletTempC = coolantIn + generated / (coolantMass * coolantCp);
       }
     }
 

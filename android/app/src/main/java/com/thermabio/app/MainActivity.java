@@ -135,6 +135,8 @@ public class MainActivity extends Activity {
         add("qMet", "Calor metabólico específico", "kW/m³", "Calor metabólico y biomasa", 38);
         add("volume", "Volumen de caldo", "m³", "Calor metabólico y biomasa", 1.2);
         add("agitation", "Potencia disipada por agitación", "kW", "Calor metabólico y biomasa", 2.9);
+        add("phiD", "Fracción de P_agit convertida en calor", "0–1", "Calor metabólico y biomasa", 1);
+        add("qOther", "Otras cargas térmicas", "kW", "Calor metabólico y biomasa", 0);
         add("tBroth", "Temperatura uniforme del caldo", "°C", "Temperaturas del proceso", 37);
         add("tIn", "Entrada del refrigerante", "°C", "Temperaturas del proceso", 10);
         add("tOut", "Salida objetivo del refrigerante", "°C", "Temperaturas del proceso", 15);
@@ -146,13 +148,19 @@ public class MainActivity extends Activity {
         add("hBroth", "Coeficiente lado caldo, hₒ", "W/(m²·K)", "Propiedades del refrigerante", 1150);
         add("wallK", "Conductividad de pared", "W/(m·K)", "Propiedades del refrigerante", 16.3);
         add("fouling", "Resistencia de ensuciamiento", "m²·K/W", "Transferencia y geometría", 0.0002);
+        add("foulingInside", "Ensuciamiento interno Rf,i", "m²·K/W", "Transferencia y geometría", 0);
         add("tubeD", "Diámetro exterior del tubo", "mm", "Geometría helicoidal", 25.4);
         add("wallT", "Espesor de pared", "mm", "Geometría helicoidal", 1.65);
         add("coilD", "Diámetro de hélice (línea central)", "mm", "Geometría helicoidal", 550);
         add("tankD", "Diámetro interno del biorreactor", "mm", "Geometría helicoidal", 1100);
         add("clearance", "Holgura radial mínima", "mm", "Geometría helicoidal", 160);
+        add("verticalClearance", "Holgura vertical mínima", "mm", "Geometría helicoidal", 0);
         add("pitch", "Paso entre vueltas", "mm", "Geometría helicoidal", 50);
         add("tankHeight", "Altura útil disponible", "mm", "Geometría helicoidal", 1400);
+        add("fDarcyCoil", "Factor Darcy hélice (0 = tubo recto)", "—", "Hidráulica y bombeo", 0);
+        add("localK", "Suma de pérdidas locales ΣK", "—", "Hidráulica y bombeo", 0);
+        add("elevation", "Elevación neta del circuito", "m", "Hidráulica y bombeo", 0);
+        add("pumpEfficiency", "Eficiencia bomba η (0 = no calcular)", "0–1", "Hidráulica y bombeo", 0);
     }
 
     private void add(String key, String label, String unit, String group, double value) {
@@ -560,7 +568,7 @@ public class MainActivity extends Activity {
         tag.setBackground(rounded(AMBER_SOFT, 9, null));
         tag.setPadding(dp(8), dp(6), dp(8), dp(6));
         module.addView(tag, margins(0, 0, 0, 8));
-        module.addView(text("Q̇_total = q̇_met · V_caldo + P_agitación", 16, INK, true), margins(0, 0, 0, 5));
+        module.addView(text("Q̇_diseño = q̇_met · V + φd · P_agit + Q̇_otros", 15, INK, true), margins(0, 0, 0, 5));
         TextView note = text("Usa «Despejar este dato» en calor metabólico, volumen o potencia para calcular esa entrada. La carga total se actualiza con esos valores.", 12, MUTED, false);
         note.setLineSpacing(dp(2), 1f);
         module.addView(note);
@@ -823,6 +831,7 @@ public class MainActivity extends Activity {
         if (group.equals("Calor metabólico y biomasa")) return "Calor volumétrico y potencia disipada";
         if (group.equals("Temperaturas del proceso")) return "Fuerza impulsora y capacidad de refrigeración";
         if (group.equals("Propiedades del refrigerante")) return "Propiedades del agua y coeficiente exterior";
+        if (group.equals("Hidráulica y bombeo")) return "Introduce fD,coil y pérdidas conocidas; 0 usa la aproximación recta";
         return "Propiedades, coeficientes y dimensiones del serpentín";
     }
 
@@ -1020,11 +1029,12 @@ public class MainActivity extends Activity {
         double clearance = get(v, "clearance") / 1000;
         if (!(get(v, "tBroth") > get(v, "tOut") && get(v, "tBroth") > get(v, "tIn"))) errors.add("El caldo debe estar a mayor temperatura que ambas corrientes de refrigerante.");
         if (!(get(v, "tOut") > get(v, "tIn"))) errors.add("La salida del refrigerante debe ser mayor que su entrada.");
-        if (get(v, "qMet") < 0 || get(v, "volume") <= 0 || get(v, "agitation") < 0) errors.add("q_met y agitación no pueden ser negativos; el volumen debe ser positivo.");
+        if (get(v, "volume") <= 0 || get(v, "agitation") < 0 || get(v, "qOther") + get(v, "qMet") * get(v, "volume") + get(v, "phiD") * get(v, "agitation") <= 0) errors.add("El volumen debe ser positivo y la carga térmica neta mayor que cero.");
+        if (get(v, "phiD") < 0 || get(v, "phiD") > 1) errors.add("La fracción φd debe estar entre 0 y 1.");
         for (String key : new String[]{"cp", "rho", "mu", "kf", "tubeD", "wallT", "wallK", "pitch", "tankD", "tankHeight", "coilD", "hBroth"}) if (get(v, key) <= 0) errors.add("Las propiedades, dimensiones y coeficiente externo deben ser positivos.");
-        if (get(v, "coolantFlow") < 0 || get(v, "clearance") < 0 || get(v, "fouling") < 0) errors.add("Caudal, holgura y ensuciamiento no pueden ser negativos.");
+        if (get(v, "coolantFlow") < 0 || get(v, "clearance") < 0 || get(v, "verticalClearance") < 0 || get(v, "fouling") < 0 || get(v, "foulingInside") < 0 || get(v, "localK") < 0 || get(v, "fDarcyCoil") < 0 || get(v, "pumpEfficiency") < 0 || get(v, "pumpEfficiency") > 1) errors.add("Caudal, holguras, pérdidas y eficiencias deben tener valores válidos.");
         if (di <= 0) errors.add("El espesor de pared deja un diámetro interior nulo o negativo.");
-        if (get(v, "pitch") / 1000 < doM) errors.add("El paso entre vueltas no puede ser menor que el diámetro exterior del tubo.");
+        if (get(v, "pitch") / 1000 < doM + get(v, "verticalClearance") / 1000) errors.add("El paso debe cubrir el diámetro del tubo más la holgura vertical indicada.");
         if (coilD <= doM) errors.add("El diámetro de hélice debe superar el diámetro exterior del tubo.");
         if (coilD + doM + 2 * clearance > tankD) errors.add("La hélice, el tubo y las holguras no caben dentro del diámetro del biorreactor.");
         double tankCapacity = Math.PI * tankD * tankD / 4 * tankH;
@@ -1032,7 +1042,8 @@ public class MainActivity extends Activity {
         if (!errors.isEmpty()) throw new IllegalArgumentException(errors.get(0));
 
         double qReaction = get(v, "qMet") * get(v, "volume");
-        double qTotal = qReaction + get(v, "agitation"); // Q_pérdidas al ambiente = 0 según el supuesto del modelo
+        double qAgitation = get(v, "phiD") * get(v, "agitation");
+        double qTotal = qReaction + qAgitation + get(v, "qOther");
         if (!(qTotal > 0)) throw new IllegalArgumentException("La carga térmica total debe ser mayor que cero.");
         double lm = lmtd(get(v, "tBroth") - get(v, "tOut"), get(v, "tBroth") - get(v, "tIn"));
         double mass = qTotal / (get(v, "cp") * (get(v, "tOut") - get(v, "tIn"))); // kW / [kJ/(kg K) K] = kg/s
@@ -1042,27 +1053,46 @@ public class MainActivity extends Activity {
         double re = 4 * mass / (Math.PI * di * mu);
         double pr = mu * cpJ / get(v, "kf");
         double nu = nusselt(re, pr);
-        double curvatureWeight = Math.max(0, Math.min(1, (re - 2300) / 700));
-        double curvatureFactor = 1 + curvatureWeight * 3.5 * di / coilD;
-        double hi = nu * get(v, "kf") / di * curvatureFactor;
-        double u = 1 / (doM / (di * hi) + doM * Math.log(doM / di) / (2 * get(v, "wallK")) + 1 / get(v, "hBroth") + get(v, "fouling"));
+        double hi = nu * get(v, "kf") / di;
+        double u = 1 / (doM / (di * hi) + doM * Math.log(doM / di) / (2 * get(v, "wallK")) + 1 / get(v, "hBroth") + get(v, "fouling") + (doM / di) * get(v, "foulingInside"));
         double area = qTotal * 1000 / (u * lm);
         double length = area / (Math.PI * doM);
         double pitch = get(v, "pitch") / 1000;
         double turnLength = Math.sqrt(Math.pow(Math.PI * coilD, 2) + pitch * pitch);
         double turns = length / turnLength;
-        double height = turns * pitch;
-        double darcy = darcyFactor(re);
-        double pressure = darcy * (length / di) * get(v, "rho") * velocity * velocity / 2;
+        int actualTurns = (int) Math.ceil(turns);
+        double actualLength = actualTurns * turnLength;
+        double heightCenters = (actualTurns - 1) * pitch;
+        double height = heightCenters + doM;
+        double installedArea = Math.PI * doM * actualLength;
+        double thermalCapacity = u * installedArea * lm / 1000;
+        double thermalSufficiency = thermalCapacity / qTotal;
+        double tubeVolume = Math.PI * di * di / 4 * actualLength;
+        double darcyStraight = darcyFactor(re);
+        double darcy = get(v, "fDarcyCoil") > 0 ? get(v, "fDarcyCoil") : darcyStraight;
+        double dynamicPressure = get(v, "rho") * velocity * velocity / 2;
+        double frictionPressure = darcy * (actualLength / di) * dynamicPressure;
+        double localPressure = get(v, "localK") * dynamicPressure;
+        double elevationPressure = get(v, "rho") * 9.80665 * get(v, "elevation");
+        double pressure = frictionPressure + localPressure + elevationPressure;
+        double pumpPower = get(v, "pumpEfficiency") > 0
+                ? Math.max(0, pressure * mass / get(v, "rho") / get(v, "pumpEfficiency") / 1000)
+                : Double.NaN;
+        double availableOutlet = get(v, "coolantFlow") > 0
+                ? get(v, "tIn") + qTotal / (get(v, "coolantFlow") * get(v, "cp"))
+                : Double.NaN;
+        double availableCooling = get(v, "coolantFlow") * get(v, "cp") * (get(v, "tOut") - get(v, "tIn"));
         double flowRatio = get(v, "coolantFlow") / mass;
-        for (double result : new double[]{lm, mass, velocity, re, pr, nu, hi, u, area, length, turns, height, darcy, pressure, flowRatio}) {
+        for (double result : new double[]{lm, mass, velocity, re, pr, nu, hi, u, area, length, turns, height,
+                actualLength, installedArea, thermalCapacity, thermalSufficiency, tubeVolume,
+                darcy, frictionPressure, localPressure, flowRatio, availableCooling}) {
             if (!Double.isFinite(result) || result < 0) throw new IllegalArgumentException("El resultado no es finito o físicamente válido; revisa unidades y dimensiones.");
         }
         boolean gnielinskiRange = re >= 3000 && re <= 5e6 && pr >= 0.5 && pr <= 2000;
         boolean radialFit = coilD + doM + 2 * clearance <= tankD;
         double liquidHeight = get(v, "volume") / (Math.PI * tankD * tankD / 4);
         double assumedAxialClearance = doM;
-        boolean heightFit = height + doM + assumedAxialClearance <= liquidHeight;
+        boolean heightFit = height + 2 * assumedAxialClearance <= liquidHeight;
         schematicResults.clear();
         schematicResults.put("coilDiameter", coilD);
         schematicResults.put("tubeDiameter", doM);
@@ -1070,9 +1100,9 @@ public class MainActivity extends Activity {
         schematicResults.put("tankHeight", tankH);
         schematicResults.put("liquidHeight", liquidHeight);
         schematicResults.put("pitch", pitch);
-        schematicResults.put("turns", turns);
+        schematicResults.put("turns", actualTurns);
         schematicResults.put("coilHeight", height);
-        schematicResults.put("tubeLength", length);
+        schematicResults.put("tubeLength", actualLength);
         schematicResults.put("brothTemperature", get(v, "tBroth"));
         schematicResults.put("inletTemperature", get(v, "tIn"));
         schematicResults.put("outletTemperature", get(v, "tOut"));
@@ -1080,6 +1110,8 @@ public class MainActivity extends Activity {
         schematicResults.put("overallU", u);
         Map<String, String> out = new LinkedHashMap<>();
         out.put("Carga metabólica", f(qReaction) + " kW");
+        out.put("Calor de agitación φd·P", f(qAgitation) + " kW");
+        out.put("Otras cargas térmicas", f(get(v, "qOther")) + " kW");
         out.put("Carga térmica total", f(qTotal) + " kW");
         out.put("LMTD", f(lm) + " K");
         out.put("Caudal másico requerido", f(mass) + " kg/s");
@@ -1093,23 +1125,32 @@ public class MainActivity extends Activity {
         out.put("Coeficiente interno estimado", f0(hi) + " W/(m²·K)");
         out.put("Coeficiente global exterior", f0(u) + " W/(m²·K)");
         out.put("Área exterior requerida", f(area) + " m²");
-        out.put("Longitud de tubo", f(length) + " m");
-        out.put("Vueltas teóricas", f(turns));
-        out.put("Altura centro a centro", f(height) + " m");
+        out.put("Longitud requerida / instalada", f(length) + " / " + f(actualLength) + " m");
+        out.put("Vueltas teóricas / reales", f(turns) + " / " + actualTurns);
+        out.put("Altura entre centros / total", f(heightCenters) + " / " + f(height) + " m");
+        out.put("Área instalada / capacidad térmica", f(installedArea) + " m² / " + f(thermalCapacity) + " kW");
+        out.put("Suficiencia térmica instalada", f(thermalSufficiency) + " ×");
+        out.put("Volumen interno del serpentín", f(tubeVolume) + " m³");
         out.put("Nivel de caldo (cilindro ideal)", f(liquidHeight) + " m");
         out.put("Capacidad cilíndrica aproximada", f(tankCapacity) + " m³");
         out.put("Holgura axial asumida", f(assumedAxialClearance * 1000) + " mm");
         out.put("Ajuste radial", radialFit ? "Cabe según cotas ingresadas" : "No cabe");
         out.put("Ajuste vertical", heightFit ? "Sumergido bajo el nivel estimado" : "No queda totalmente sumergido");
-        out.put("Caída de presión (tubo recto equivalente)", f(pressure / 1000) + " kPa");
+        out.put("ΔP fricción / total", f(frictionPressure / 1000) + " / " + f(pressure / 1000) + " kPa");
+        out.put("ΔP local / elevación", f(localPressure / 1000) + " / " + f(elevationPressure / 1000) + " kPa");
+        out.put("Factor Darcy usado", f(darcy) + (get(v, "fDarcyCoil") > 0 ? " ingresado para hélice" : " de tubo recto equivalente"));
+        out.put("Potencia de bomba", Double.isNaN(pumpPower) ? "No calculada: falta η" : f(pumpPower) + " kW");
+        out.put("Capacidad refrigerante disponible", f(availableCooling) + " kW");
+        out.put("Salida refrigerante con caudal disponible", Double.isNaN(availableOutlet) ? "No calculada: caudal cero" : f(availableOutlet) + " °C");
         out.put("Estado del caudal", flowRatio >= 1 ? "Suficiente para el objetivo" : "Insuficiente para el objetivo");
         out.put("Rango de Gnielinski", gnielinskiRange ? "Dentro del intervalo orientativo" : "Fuera del intervalo; hᵢ más incierto");
         List<String> warnings = new ArrayList<>();
         if (re < 2300) warnings.add("Laminar: Nu = 3.66 es de tubo recto; no corrige el efecto Dean en la hélice.");
         if (re >= 2300 && re < 4000) warnings.add("Transición: el régimen y las interpolaciones dependen de la geometría helicoidal.");
         if ((re >= 2300 && re < 3000) || !gnielinskiRange) warnings.add("La correlación de Gnielinski está fuera de su intervalo orientativo o se está interpolando.");
-        warnings.add("Nu helicoidal usa un multiplicador simplificado; no valida el serpentín real.");
-        warnings.add("ΔP usa tubo recto y subestima potencialmente la pérdida de la hélice; no dimensiona una bomba.");
+        warnings.add("Nuᵢ usa correlaciones de tubo recto; Dean se informa, pero no corrige la transferencia helicoidal.");
+        if (get(v, "fDarcyCoil") == 0) warnings.add("No se ingresó fD,coil: fricción estimada con factor de tubo recto; pérdidas locales y elevación dependen de ΣK y Δz.");
+        warnings.add("El resultado hidráulico es preliminar y no sustituye una curva de sistema ni la selección de bomba.");
         if (velocity > 2.4) warnings.add("Alerta de cribado (> 2.4 m/s, no es un límite universal): verificar pérdida real, erosión, cavitación y criterio del proceso.");
         if (!heightFit) warnings.add("La hélice supera el nivel de caldo estimado con el volumen y diámetro del tanque.");
         out.put("Advertencias del modelo", String.join(" ", warnings));
