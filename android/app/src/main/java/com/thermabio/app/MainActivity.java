@@ -29,12 +29,14 @@ import android.annotation.SuppressLint;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.FrameLayout;
+import android.widget.GridLayout;
 import android.widget.HorizontalScrollView;
 import android.view.inputmethod.InputMethodManager;
 import android.content.Context;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -87,14 +89,20 @@ public class MainActivity extends Activity {
     private LinearLayout summaryGrid;
     private LinearLayout calculatorSummaryGrid;
     private TextView flowWarningText;
-    private final Button[] navigationButtons = new Button[5];
+    private final Button[] navigationButtons = new Button[6];
     private final Button[] modelSectionButtons = new Button[4];
     private final int[] navigationAccents = {TEAL, YELLOW, MAGENTA, TEAL};
     private TextView statusText;
     private LinearLayout dashboardMetrics;
     private TextView dashboardStatus;
-    private TextView dashboardTemperature;
     private TextView dashboardTelemetry;
+    private TextView dashboardBalanceLabel;
+    private ProgressBar dashboardBalanceMeter;
+    private TextView energyCapacitySummary;
+    private ProgressBar energyCapacityMeter;
+    private TextView spacesRunMetrics;
+    private TextView activeChannelLabel;
+    private LinearLayout calcActionContainer;
     private WebView modelWebView;
     private WebView bioprocessWebView;
     private boolean bioprocessWebViewReady;
@@ -107,11 +115,12 @@ public class MainActivity extends Activity {
     private ScrollView scrollView;
     private FrameLayout root;
     private LinearLayout dashboardScreen;
+    private LinearLayout spacesScreen;
     private LinearLayout calculatorScreen;
     private LinearLayout resultsScreen;
     private LinearLayout methodologyScreen;
     private LinearLayout modelScreen;
-    private int currentScreen = 0;
+    private int currentScreen = 1;
     private Typeface headlineTypeface;
     private Typeface bodyTypeface;
     private Typeface monoTypeface;
@@ -187,25 +196,29 @@ public class MainActivity extends Activity {
         LinearLayout screenStack = new LinearLayout(this);
         screenStack.setOrientation(LinearLayout.VERTICAL);
         scrollView.addView(screenStack);
+        spacesScreen = newScreen();
         dashboardScreen = newScreen();
         calculatorScreen = newScreen();
         resultsScreen = newScreen();
         methodologyScreen = newScreen();
         modelScreen = newScreen();
         modelScreen.setPadding(0, 0, 0, 0);
+        screenStack.addView(spacesScreen);
         screenStack.addView(dashboardScreen);
         screenStack.addView(calculatorScreen);
         screenStack.addView(modelScreen);
         screenStack.addView(resultsScreen);
         screenStack.addView(methodologyScreen);
+        addSpacesScreen(spacesScreen);
         addDashboardScreen(dashboardScreen);
+        spacesScreen.setVisibility(View.GONE);
         dashboardScreen.setVisibility(View.VISIBLE);
         calculatorScreen.setVisibility(View.GONE);
         resultsScreen.setVisibility(View.GONE);
         methodologyScreen.setVisibility(View.GONE);
         modelScreen.setVisibility(View.GONE);
         LinearLayout page = calculatorScreen;
-        addScreenHeader(page, "MÓDULOS DE DISEÑO", "# cooling-coil-design  ·  PARAMETER INSPECTOR");
+        addScreenHeader(page, "Cooling Coil Calculation", "PARAMETER INSPECTOR  ·  # cooling-coil-design");
         LinearLayout moduleHeading = new LinearLayout(this);
         moduleHeading.setGravity(Gravity.CENTER_VERTICAL);
         moduleHeading.setPadding(dp(12), dp(10), dp(8), dp(10));
@@ -218,13 +231,20 @@ public class MainActivity extends Activity {
         moduleHeading.addView(reset);
         page.addView(moduleHeading, margins(0, 0, 0, 10));
 
+        TextView vesselLabel = text("VESSEL & HELICAL COIL GEOMETRY", 10, TEAL, true);
+        vesselLabel.setLetterSpacing(0.04f);
+        page.addView(vesselLabel, margins(2, 2, 0, 6));
+        page.addView(coilSchematic(), margins(0, 0, 0, 10));
+
         calculatorSummaryGrid = new LinearLayout(this);
         calculatorSummaryGrid.setOrientation(LinearLayout.VERTICAL);
         page.addView(calculatorSummaryGrid, margins(0, 0, 0, 5));
+        addSectionLabel(page, "INPUT SPECIFICATIONS", "PARÁMETROS DEL PROCESO Y DEL SERPENTÍN");
         addInputChannelBar(page);
 
         String currentGroup = "";
         LinearLayout groupCard = null;
+        GridLayout inputGrid = null;
         for (Spec spec : specs) {
             if (!spec.group.equals(currentGroup)) {
                 currentGroup = spec.group;
@@ -242,30 +262,17 @@ public class MainActivity extends Activity {
                 TextView note = text(groupNote(currentGroup), 10, MUTED, false);
                 note.setLineSpacing(dp(2), 1f);
                 groupCard.addView(note, margins(0, 0, 0, 8));
+                inputGrid = new GridLayout(this);
+                inputGrid.setColumnCount(2);
+                inputGrid.setUseDefaultMargins(false);
+                groupCard.addView(inputGrid, new LinearLayout.LayoutParams(-1, -2));
             }
-            addEditor(groupCard, spec);
+            addEditor(inputGrid, spec);
         }
         inputGroupCards.put("Bioproceso", addMetabolicBalanceCard(calculatorScreen));
 
-        Button calculate = new Button(this);
-        calculate.setText("CALCULAR DIMENSIONAMIENTO");
-        calculate.setTextColor(INK);
-        calculate.setTextSize(16);
-        calculate.setAllCaps(false);
-        calculate.setTypeface(headlineTypeface);
-        calculate.setTextColor(ON_TEAL);
-        calculate.setBackground(rounded(TEAL, 2, LINE));
-        calculate.setElevation(dp(2));
-        calculate.setPadding(dp(18), dp(13), dp(18), dp(13));
-        calculate.setOnClickListener(v -> {
-            ((InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(calculate.getWindowToken(), 0);
-            calculate(true);
-            showScreen(3);
-        });
-        page.addView(calculate, margins(0, 0, 0, 16));
-
-        addScreenHeader(resultsScreen, "RESULTADOS TÉRMICOS Y MECÁNICOS", "SIMULACIÓN LOCAL  ·  ACTUALIZACIÓN EN VIVO");
-        addBioreactorResultsCard(resultsScreen);
+        addScreenHeader(resultsScreen, "Live Simulation", "# simulation-results  ·  THERMAL PERFORMANCE");
+        addEnergyProfileCard(resultsScreen);
         LinearLayout output = card();
         output.setPadding(dp(14), dp(4), dp(14), dp(14));
         resultsScreen.addView(output, margins(0, 0, 0, 12));
@@ -298,7 +305,7 @@ public class MainActivity extends Activity {
         });
         output.addView(export, margins(0, 18, 0, 0));
         Button editAgain = smallButton("Editar parámetros");
-        editAgain.setOnClickListener(v -> showScreen(1));
+        editAgain.setOnClickListener(v -> showScreen(2));
         output.addView(editAgain, margins(0, 10, 0, 0));
         addScreenHeader(methodologyScreen, "METODOLOGÍA Y ECUACIONES", "BASES Y CRITERIOS DE DIMENSIONAMIENTO");
         LinearLayout method = card();
@@ -373,16 +380,35 @@ public class MainActivity extends Activity {
         Button toCalculator = smallButton("Ir a la calculadora  →");
         toCalculator.setBackground(projected(TEAL));
         toCalculator.setTextColor(ON_TEAL);
-        toCalculator.setOnClickListener(v -> showScreen(1));
+        toCalculator.setOnClickListener(v -> showScreen(2));
         methodologyScreen.addView(toCalculator, margins(0, 0, 0, 14));
 
         TextView disclaimer = text("ESTIMACIÓN ACADÉMICA PRELIMINAR. VERIFICA PROPIEDADES Y CORRELACIONES ANTES DE FABRICAR U OPERAR UN EQUIPO.", 11, MUTED, true);
         disclaimer.setLineSpacing(dp(3), 1f);
         methodologyScreen.addView(disclaimer, margins(2, 0, 2, 12));
         FrameLayout.LayoutParams scrollParams = new FrameLayout.LayoutParams(-1, -1);
-        scrollParams.bottomMargin = dp(92);
+        scrollParams.bottomMargin = dp(90);
         addFullIndexScreen(modelScreen);
         root.addView(scrollView, scrollParams);
+
+        calcActionContainer = new LinearLayout(this);
+        calcActionContainer.setGravity(Gravity.CENTER);
+        calcActionContainer.setPadding(dp(12), dp(6), dp(12), dp(6));
+        calcActionContainer.setBackground(rounded(PAPER, 1, LINE));
+        Button calculateAction = smallButton("Calculate & Verify Thermal Balance  →");
+        calculateAction.setTextSize(13);
+        calculateAction.setMinHeight(dp(48));
+        calculateAction.setBackground(projected(TEAL));
+        calculateAction.setTextColor(ON_TEAL);
+        calculateAction.setOnClickListener(v -> {
+            calculate(true);
+            showScreen(4);
+        });
+        calcActionContainer.addView(calculateAction, new LinearLayout.LayoutParams(-1, -2));
+        FrameLayout.LayoutParams calcActionParams = new FrameLayout.LayoutParams(-1, dp(62), Gravity.BOTTOM);
+        calcActionParams.setMargins(dp(12), 0, dp(12), dp(78));
+        root.addView(calcActionContainer, calcActionParams);
+        calcActionContainer.setVisibility(View.GONE);
 
         LinearLayout navigation = new LinearLayout(this);
         navigation.setOrientation(LinearLayout.HORIZONTAL);
@@ -390,11 +416,11 @@ public class MainActivity extends Activity {
         navigation.setPadding(dp(7), dp(6), dp(7), dp(6));
         navigation.setBackground(rounded(PAPER, 1, LINE));
         navigation.setElevation(dp(5));
-        addNavigationItem(navigation, "Inicio", TEAL, 0);
-        addNavigationItem(navigation, "Módulos", TEAL, 1);
-        addNavigationItem(navigation, "Modelo 3D", MAGENTA, 2);
-        addNavigationItem(navigation, "Simular", YELLOW, 3);
-        addNavigationItem(navigation, "Fórmulas", TEAL, 4);
+        addNavigationItem(navigation, "Spaces", TEAL, 0);
+        addNavigationItem(navigation, "Modules", TEAL, 1);
+        addNavigationItem(navigation, "3D Vessel", MAGENTA, 3);
+        addNavigationItem(navigation, "Simulation", YELLOW, 4);
+        addNavigationItem(navigation, "Library", TEAL, 5);
         FrameLayout.LayoutParams navParams = new FrameLayout.LayoutParams(-1, dp(70), Gravity.BOTTOM);
         navParams.setMargins(dp(12), 0, dp(12), dp(8));
         root.addView(navigation, navParams);
@@ -402,75 +428,283 @@ public class MainActivity extends Activity {
     }
 
     private void addDashboardScreen(LinearLayout screen) {
-        addScreenHeader(screen, "THERMABIO  /  ENGINEERING", "ESPACIO DE TRABAJO  ·  CÁLCULO LOCAL");
-        LinearLayout hero = card();
-        hero.setPadding(dp(14), dp(14), dp(14), dp(14));
-        hero.setBackground(rounded(Color.rgb(24, 39, 41), 10, TEAL));
-        TextView eyebrow = text("# BIOPROCESS ENGINEERING", 10, TEAL, true);
-        eyebrow.setLetterSpacing(0.08f);
-        hero.addView(eyebrow);
-        hero.addView(text("Diseña y evalúa tu\nserpentín de enfriamiento", 23, INK, true), margins(0, 8, 0, 5));
-        dashboardStatus = text("Preparando cálculo con los parámetros actuales…", 12, MUTED, false);
-        dashboardStatus.setLineSpacing(dp(2), 1f);
-        hero.addView(dashboardStatus, margins(0, 0, 0, 12));
-        LinearLayout actions = new LinearLayout(this);
-        actions.setOrientation(LinearLayout.HORIZONTAL);
-        Button newDesign = smallButton("Abrir módulos  →");
-        newDesign.setBackground(projected(TEAL));
-        newDesign.setTextColor(ON_TEAL);
-        newDesign.setOnClickListener(v -> showScreen(1));
-        actions.addView(newDesign, new LinearLayout.LayoutParams(0, -2, 1));
-        Button run = smallButton("Ver simulación");
-        run.setOnClickListener(v -> showScreen(3));
-        LinearLayout.LayoutParams runParams = new LinearLayout.LayoutParams(0, -2, 1);
-        runParams.setMargins(dp(8), 0, 0, 0);
-        actions.addView(run, runParams);
-        hero.addView(actions);
-        screen.addView(hero, margins(0, 0, 0, 12));
+        LinearLayout toolbar = new LinearLayout(this);
+        toolbar.setGravity(Gravity.CENTER_VERTICAL);
+        toolbar.setPadding(dp(6), dp(4), dp(4), dp(7));
+        Button spaces = smallButton("☰");
+        spaces.setTextSize(20);
+        spaces.setMinWidth(dp(42));
+        spaces.setOnClickListener(v -> showWorkspaceChannels());
+        toolbar.addView(spaces);
+        LinearLayout identity = new LinearLayout(this);
+        identity.setOrientation(LinearLayout.VERTICAL);
+        identity.setPadding(dp(8), 0, 0, 0);
+        identity.addView(text("BIOPROCESS ENGINEERING", 9, MUTED, true));
+        activeChannelLabel = text("# Engineering Modules", 15, INK, true);
+        identity.addView(activeChannelLabel);
+        toolbar.addView(identity, new LinearLayout.LayoutParams(0, -2, 1));
+        TextView local = text("● LOCAL", 9, Color.rgb(81, 222, 162), true);
+        local.setPadding(dp(8), dp(6), dp(8), dp(6));
+        local.setBackground(rounded(Color.rgb(25, 51, 42), 8, null));
+        toolbar.addView(local);
+        Button search = smallButton("⌕");
+        search.setTextSize(20);
+        search.setMinWidth(dp(40));
+        search.setOnClickListener(v -> showSearchDialog());
+        toolbar.addView(search);
+        screen.addView(toolbar, margins(0, 0, 0, 6));
 
-        addSectionLabel(screen, "DESIGN SNAPSHOT", "RESULTADOS DEL CÁLCULO ACTUAL");
+        TextView suite = text("BIOPROCESS PILOT SUITE  /  ESPACIO DE TRABAJO", 9, TEAL, true);
+        suite.setLetterSpacing(0.08f);
+        screen.addView(suite, margins(3, 2, 0, 4));
+        TextView welcome = text("Diseño térmico\ndel biorreactor", 27, INK, true);
+        welcome.setLineSpacing(dp(1), 0.98f);
+        screen.addView(welcome, margins(2, 0, 0, 4));
+        dashboardStatus = text("Dimensionamiento local · sin conexión", 12, MUTED, false);
+        screen.addView(dashboardStatus, margins(3, 0, 0, 10));
+
+        LinearLayout actions = new LinearLayout(this);
+        Button newProject = smallButton("＋  Nuevo diseño");
+        newProject.setBackground(projected(TEAL));
+        newProject.setTextColor(ON_TEAL);
+        newProject.setOnClickListener(v -> showScreen(2));
+        actions.addView(newProject, new LinearLayout.LayoutParams(0, dp(44), 1));
+        Button quickCalculate = smallButton("⌁  Cálculo rápido");
+        quickCalculate.setOnClickListener(v -> showScreen(2));
+        LinearLayout.LayoutParams quickParams = new LinearLayout.LayoutParams(0, dp(44), 1);
+        quickParams.setMargins(dp(7), 0, 0, 0);
+        actions.addView(quickCalculate, quickParams);
+        screen.addView(actions, margins(0, 0, 0, 14));
+
+        addSectionLabel(screen, "ACTIVE DESIGN  /  ESTADO ACTUAL", "DIMENSIONAMIENTO DEL SERPENTÍN");
+        LinearLayout runCard = card();
+        runCard.setPadding(dp(12), dp(11), dp(12), dp(10));
+        LinearLayout runHead = new LinearLayout(this);
+        runHead.setGravity(Gravity.CENTER_VERTICAL);
+        TextView runDot = text("●", 10, Color.rgb(81, 222, 162), true);
+        runHead.addView(runDot);
+        TextView runName = text("  Diseño de serpentín", 13, INK, true);
+        runHead.addView(runName, new LinearLayout.LayoutParams(0, -2, 1));
+        runHead.addView(text("ACTUAL", 8, TEAL, true));
+        runCard.addView(runHead);
         dashboardMetrics = new LinearLayout(this);
         dashboardMetrics.setOrientation(LinearLayout.VERTICAL);
-        screen.addView(dashboardMetrics, margins(0, 0, 0, 12));
-        dashboardTemperature = text("Temperatura del caldo  ·  —", 13, INK, true);
-        dashboardTemperature.setPadding(dp(12), dp(10), dp(12), dp(10));
-        dashboardTemperature.setBackground(rounded(PAPER, 8, LINE));
-        screen.addView(dashboardTemperature, margins(0, 0, 0, 12));
+        runCard.addView(dashboardMetrics, margins(0, 9, 0, 0));
+        screen.addView(runCard, margins(0, 0, 0, 14));
 
-        addSectionLabel(screen, "# CORE ENGINEERING MODULES", "CANALES DE TRABAJO");
+        LinearLayout moduleTitle = new LinearLayout(this);
+        moduleTitle.setGravity(Gravity.CENTER_VERTICAL);
+        moduleTitle.addView(text("CORE ENGINEERING MODULES", 10, MUTED, true), new LinearLayout.LayoutParams(0, -2, 1));
+        TextView channels = text("CANAL  /  07", 9, TEAL, true);
+        moduleTitle.addView(channels);
+        screen.addView(moduleTitle, margins(2, 0, 0, 6));
         String[][] modules = {
-                {"Calor metabólico y biomasa", "Q̇ metabólico · agitación · biomasa"},
-                {"Temperaturas del proceso", "Caldo · entrada y salida · caudal"},
-                {"Propiedades del refrigerante", "ρ · Cp · μ · k · coeficientes"},
-                {"Transferencia y geometría", "Resistencias y área requerida"},
-                {"Geometría helicoidal", "Diámetros · paso · altura"},
-                {"Hidráulica y bombeo", "Velocidad · pérdidas · bomba"},
-                {"Bioproceso", "Balances acoplados en vivo"}
+                {"▧", "# cooling-coil-design", "Serpentín · área térmica y geometría", "ACTIVO", "Temperaturas del proceso"},
+                {"▤", "# bioreactor-config", "Volumen, dimensiones y holguras", "", "Geometría helicoidal"},
+                {"ϟ", "# energy-balances", "Calor metabólico y balance de energía", "", "Calor metabólico y biomasa"},
+                {"◌", "# heat-transfer", "Resistencias, LMTD y coeficiente global", "", "Transferencia y geometría"},
+                {"⌁", "# hydraulics", "Flujo, velocidad, pérdidas y bombeo", "", "Hidráulica y bombeo"},
+                {"∑", "# calculations", "Propiedades y parámetros del proceso", "", "Propiedades del refrigerante"},
+                {"◉", "# bioprocess-kinetics", "Monod, OUR/OTR y calor acoplado", "", "Bioproceso"}
         };
-        for (String[] item : modules) {
-            LinearLayout row = new LinearLayout(this);
-            row.setGravity(Gravity.CENTER_VERTICAL);
-            row.setPadding(dp(12), dp(11), dp(10), dp(11));
-            row.setBackground(rounded(PAPER, 8, LINE));
-            LinearLayout copy = new LinearLayout(this);
-            copy.setOrientation(LinearLayout.VERTICAL);
-            copy.addView(text(item[0], 14, INK, true));
-            copy.addView(text(item[1], 11, MUTED, false), margins(0, 3, 0, 0));
-            row.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
-            row.addView(text("›", 24, TEAL, true));
-            row.setOnClickListener(v -> openInputGroup(item[0]));
-            screen.addView(row, margins(0, 0, 0, 7));
+        for (String[] item : modules) addChannelRow(screen, item[0], item[1], item[2], item[3], item[4]);
+
+        addSectionLabel(screen, "LIVE TELEMETRY FEED", "LECTURAS DEL CÁLCULO ACTUAL");
+        LinearLayout telemetry = card();
+        telemetry.setPadding(dp(11), dp(10), dp(11), dp(10));
+        dashboardTelemetry = text("CALDO  — °C     REFRIGERANTE  — → — °C", 10, TEAL, true);
+        dashboardTelemetry.setTypeface(monoTypeface);
+        telemetry.addView(dashboardTelemetry);
+        dashboardBalanceLabel = text("CAPACIDAD INSTALADA  /  —", 8, MUTED, true);
+        telemetry.addView(dashboardBalanceLabel, margins(0, 8, 0, 3));
+        dashboardBalanceMeter = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        dashboardBalanceMeter.setMax(200);
+        dashboardBalanceMeter.setProgressTintList(android.content.res.ColorStateList.valueOf(TEAL));
+        dashboardBalanceMeter.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(36, 49, 50)));
+        telemetry.addView(dashboardBalanceMeter, new LinearLayout.LayoutParams(-1, dp(7)));
+        screen.addView(telemetry, margins(0, 0, 0, 13));
+
+        addSectionLabel(screen, "QUICK FORMULA LIBRARY", "ACCESO RÁPIDO A MÉTODOS Y ECUACIONES");
+        LinearLayout formulaPills = new LinearLayout(this);
+        String[] formulas = {"Q̇ Balance térmico", "ΔTlm LMTD", "Re Reynolds", "Uo Transferencia"};
+        for (String formula : formulas) {
+            Button pill = smallButton(formula);
+            pill.setTextSize(8.5f);
+            pill.setOnClickListener(v -> showScreen(5));
+            LinearLayout.LayoutParams pillParams = new LinearLayout.LayoutParams(0, dp(37), 1);
+            pillParams.setMargins(dp(2), 0, dp(2), 0);
+            formulaPills.addView(pill, pillParams);
         }
-        addSectionLabel(screen, "LIVE TELEMETRY", "VARIABLES COMPARTIDAS CON BIOPROCESO");
-        dashboardTelemetry = text("Refrigerante: entrada -- °C  /  salida -- °C\nEstado: calculando con los valores actuales", 12, MUTED, false);
-        dashboardTelemetry.setPadding(dp(12), dp(12), dp(12), dp(12));
-        dashboardTelemetry.setLineSpacing(dp(3), 1f);
-        dashboardTelemetry.setBackground(rounded(PAPER, 8, LINE));
-        screen.addView(dashboardTelemetry, margins(0, 0, 0, 12));
-        addSectionLabel(screen, "QUICK FORMULA LIBRARY", "MÉTODOS Y ECUACIONES UTILIZADAS");
-        Button formulas = smallButton("Abrir biblioteca de fórmulas  →");
-        formulas.setOnClickListener(v -> showScreen(4));
-        screen.addView(formulas, margins(0, 0, 0, 14));
+        screen.addView(formulaPills, margins(0, 0, 0, 14));
+    }
+
+    private void addSpacesScreen(LinearLayout screen) {
+        screen.setPadding(dp(7), dp(8), dp(7), dp(20));
+        LinearLayout top = new LinearLayout(this);
+        top.setGravity(Gravity.CENTER_VERTICAL);
+        Button back = smallButton("‹");
+        back.setTextSize(23);
+        back.setMinWidth(dp(40));
+        back.setOnClickListener(v -> showScreen(1));
+        top.addView(back);
+        LinearLayout title = new LinearLayout(this);
+        title.setOrientation(LinearLayout.VERTICAL);
+        title.setPadding(dp(8), 0, 0, 0);
+        title.addView(text("BIOPROCESS ENGINEERING", 8, MUTED, true));
+        title.addView(text("Workspaces & Channels", 15, INK, true));
+        top.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
+        Button search = smallButton("⌕");
+        search.setTextSize(20);
+        search.setOnClickListener(v -> showSearchDialog());
+        top.addView(search);
+        screen.addView(top, margins(0, 0, 0, 9));
+
+        LinearLayout workspace = new LinearLayout(this);
+        workspace.setGravity(Gravity.CENTER_VERTICAL);
+        workspace.setPadding(dp(9), dp(9), dp(9), dp(9));
+        workspace.setBackground(rounded(PAPER, 8, LINE));
+        TextView emblem = text("TB", 13, ON_TEAL, true);
+        emblem.setGravity(Gravity.CENTER);
+        emblem.setBackground(rounded(TEAL, 9, null));
+        workspace.addView(emblem, new LinearLayout.LayoutParams(dp(34), dp(34)));
+        LinearLayout workspaceNames = new LinearLayout(this);
+        workspaceNames.setOrientation(LinearLayout.VERTICAL);
+        workspaceNames.setPadding(dp(9), 0, 0, 0);
+        workspaceNames.addView(text("THERMABIO WORKSPACE", 10, INK, true));
+        workspaceNames.addView(text("Proyecto local · cálculo sin red", 9, MUTED, false));
+        workspace.addView(workspaceNames, new LinearLayout.LayoutParams(0, -2, 1));
+        workspace.addView(text("⌄", 17, MUTED, true));
+        screen.addView(workspace, margins(0, 0, 0, 10));
+
+        LinearLayout columns = new LinearLayout(this);
+        columns.setOrientation(LinearLayout.HORIZONTAL);
+        LinearLayout rail = new LinearLayout(this);
+        rail.setOrientation(LinearLayout.VERTICAL);
+        rail.setGravity(Gravity.TOP | Gravity.CENTER_HORIZONTAL);
+        rail.setPadding(dp(3), dp(4), dp(5), dp(4));
+        String[] railMarks = {"TB", "BE", "HT", "Q", "3D", "∑", "+"};
+        int[] railColors = {TEAL, TEAL, MAGENTA, YELLOW, TEAL, MAGENTA, MUTED};
+        for (int i = 0; i < railMarks.length; i++) {
+            final int target = i;
+            TextView mark = text(railMarks[i], i == 0 ? 10 : 12, i == 0 ? ON_TEAL : INK, true);
+            mark.setGravity(Gravity.CENTER);
+            mark.setBackground(rounded(i == 0 ? TEAL : Color.rgb(43, 45, 50), 11, i == 0 ? TEAL : LINE));
+            LinearLayout.LayoutParams markParams = new LinearLayout.LayoutParams(dp(36), dp(36));
+            markParams.setMargins(0, 0, 0, dp(8));
+            rail.addView(mark, markParams);
+            mark.setOnClickListener(v -> {
+                if (target == 4) showScreen(3);
+                else if (target == 5) showScreen(5);
+                else if (target == 6) showSearchDialog();
+            });
+        }
+        columns.addView(rail, new LinearLayout.LayoutParams(dp(43), -1));
+
+        LinearLayout channelPanel = new LinearLayout(this);
+        channelPanel.setOrientation(LinearLayout.VERTICAL);
+        channelPanel.setPadding(dp(6), dp(2), dp(3), dp(8));
+        channelPanel.addView(text("BIOPROCESS LAB  /  WORKSPACE", 8, MUTED, true), margins(0, 0, 0, 3));
+        TextView groupTitle = text("⌄  ENGINEERING MODULES", 9, MUTED, true);
+        groupTitle.setPadding(dp(2), dp(7), dp(2), dp(4));
+        channelPanel.addView(groupTitle);
+        addSpaceChannel(channelPanel, "# overview", "Diseño térmico del biorreactor", 1, null, true);
+        addSpaceChannel(channelPanel, "# bioreactor-config", "Geometría y holguras", 2, "Geometría helicoidal", false);
+        addSpaceChannel(channelPanel, "# energy-balances", "Calor metabólico · agitación", 2, "Calor metabólico y biomasa", false);
+        addSpaceChannel(channelPanel, "# bioprocess-kinetics", "Monod · OUR/OTR · calor acoplado", 2, "Bioproceso", false);
+        addSpaceChannel(channelPanel, "# heat-transfer", "Resistencias · LMTD · Uo", 2, "Transferencia y geometría", false);
+        addSpaceChannel(channelPanel, "# cooling-coil-design", "Área · flujo · serpentín", 2, "Temperaturas del proceso", true);
+        addSpaceChannel(channelPanel, "# hydraulics", "Pérdida de presión · bomba", 2, "Hidráulica y bombeo", false);
+        addSpaceChannel(channelPanel, "# calculations", "Propiedades y resultados", 2, "Propiedades del refrigerante", false);
+        TextView simTitle = text("⌄  SIMULATION & DATA", 9, MUTED, true);
+        simTitle.setPadding(dp(2), dp(10), dp(2), dp(4));
+        channelPanel.addView(simTitle);
+        addSpaceChannel(channelPanel, "# live-telemetry", "Variables actuales", 2, "Temperaturas del proceso", false);
+        addSpaceChannel(channelPanel, "# simulation-results", "Balance térmico", 4, null, false);
+        TextView vaultTitle = text("⌄  PROJECT VAULT", 9, MUTED, true);
+        vaultTitle.setPadding(dp(2), dp(10), dp(2), dp(4));
+        channelPanel.addView(vaultTitle);
+        addSpaceChannel(channelPanel, "# documentation", "Criterios y supuestos", 5, null, false);
+        addSpaceChannel(channelPanel, "# formula-reference", "Métodos y ecuaciones", 5, null, false);
+        columns.addView(channelPanel, new LinearLayout.LayoutParams(0, -2, 1));
+        screen.addView(columns, new LinearLayout.LayoutParams(-1, -2));
+
+        LinearLayout activeRun = card();
+        activeRun.setPadding(dp(9), dp(9), dp(9), dp(9));
+        activeRun.addView(text("CURRENT DESIGN  ·  LOCAL", 8, Color.rgb(81, 222, 162), true));
+        activeRun.addView(text("Serpentín de enfriamiento", 12, INK, true), margins(0, 4, 0, 2));
+        spacesRunMetrics = text("Q̇ = —   ·   T caldo = — °C", 9, MUTED, true);
+        activeRun.addView(spacesRunMetrics);
+        Button openCurrent = smallButton("Abrir diseño  →");
+        openCurrent.setOnClickListener(v -> showScreen(2));
+        activeRun.addView(openCurrent, margins(0, 7, 0, 0));
+        screen.addView(activeRun, margins(0, 12, 0, 10));
+    }
+
+    private void addSpaceChannel(LinearLayout parent, String channel, String detail, int destination, String group, boolean selected) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(7), dp(7), dp(5), dp(7));
+        row.setBackground(rounded(selected ? Color.rgb(0, 54, 59) : Color.TRANSPARENT, 6, selected ? TEAL : null));
+        LinearLayout copy = new LinearLayout(this);
+        copy.setOrientation(LinearLayout.VERTICAL);
+        TextView name = text(channel, 10, selected ? TEAL : INK, true);
+        name.setTypeface(monoTypeface);
+        copy.addView(name);
+        copy.addView(text(detail, 8.5f, MUTED, false), margins(0, 2, 0, 0));
+        row.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
+        if (selected) row.addView(text("●", 8, Color.rgb(81, 222, 162), true));
+        parent.addView(row, margins(0, 1, 0, 2));
+        row.setOnClickListener(v -> {
+            if (group != null) openInputGroup(group);
+            else showScreen(destination);
+        });
+    }
+
+    private String readDisplay(String key) {
+        return editors.containsKey(key) ? editors.get(key).getText().toString() : "—";
+    }
+
+    private void addChannelRow(LinearLayout parent, String icon, String channel, String description, String badge, String group) {
+        LinearLayout row = new LinearLayout(this);
+        row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setPadding(dp(9), dp(8), dp(8), dp(8));
+        row.setBackground(rounded(Color.rgb(27, 28, 32), 8, LINE));
+        TextView glyph = text(icon, 16, TEAL, true);
+        glyph.setGravity(Gravity.CENTER);
+        glyph.setBackground(rounded(Color.rgb(37, 41, 46), 6, null));
+        row.addView(glyph, new LinearLayout.LayoutParams(dp(34), dp(34)));
+        LinearLayout textColumn = new LinearLayout(this);
+        textColumn.setOrientation(LinearLayout.VERTICAL);
+        textColumn.setPadding(dp(9), 0, dp(4), 0);
+        TextView name = text(channel, 11, INK, true);
+        name.setTypeface(monoTypeface);
+        textColumn.addView(name);
+        textColumn.addView(text(description, 9.5f, MUTED, false), margins(0, 2, 0, 0));
+        row.addView(textColumn, new LinearLayout.LayoutParams(0, -2, 1));
+        if (!badge.isEmpty()) {
+            TextView tag = text(badge, 8, TEAL, true);
+            tag.setPadding(dp(5), dp(4), dp(5), dp(4));
+            tag.setBackground(rounded(TEAL_SOFT, 5, null));
+            row.addView(tag);
+        }
+        row.addView(text("›", 20, MUTED, true));
+        row.setOnClickListener(v -> openInputGroup(group));
+        parent.addView(row, margins(0, 0, 0, 5));
+    }
+
+    private void showWorkspaceChannels() {
+        showScreen(0);
+    }
+
+    private void showSearchDialog() {
+        String[] destinations = {"Módulos y parámetros", "Modelo 3D", "Simulación térmica", "Biblioteca de fórmulas", "Canales del espacio"};
+        new AlertDialog.Builder(this).setTitle("Buscar en ThermaBio").setItems(destinations, (dialog, which) -> {
+            if (which == 0) showScreen(2);
+            else if (which == 1) showScreen(3);
+            else if (which == 2) showScreen(4);
+            else if (which == 3) showScreen(5);
+            else showWorkspaceChannels();
+        }).show();
     }
 
     private void addSectionLabel(LinearLayout parent, String title, String subtitle) {
@@ -500,7 +734,7 @@ public class MainActivity extends Activity {
     }
 
     private void openInputGroup(String group) {
-        showScreen(1);
+        showScreen(2);
         scrollView.postDelayed(() -> scrollToInputGroup(group), 190);
     }
 
@@ -516,23 +750,25 @@ public class MainActivity extends Activity {
 
     private void populateDashboard() {
         if (dashboardStatus == null || dashboardMetrics == null) return;
-        dashboardStatus.setText("Cálculo actualizado · valores vinculados a parámetros y bioproceso");
+        dashboardStatus.setText("Diseño local · resultados conectados con los parámetros del proceso");
         dashboardMetrics.removeAllViews();
-        String[][] rows = {{"Carga térmica", "Carga térmica total"}, {"Área exterior requerida", "Área exterior requerida"}, {"Longitud instalada", "Longitud de tubo"}, {"Caudal másico requerido", "Caudal másico requerido"}};
+        String[][] rows = {{"Q̇ TOTAL", "Carga térmica total"}, {"ÁREA EXTERIOR", "Área exterior requerida"},
+                {"LONGITUD INSTALADA", "Longitud requerida / instalada"}, {"CAUDAL REQUERIDO", "Caudal másico requerido"}};
         for (int i = 0; i < rows.length; i += 2) {
             LinearLayout row = new LinearLayout(this);
             for (int j = i; j < i + 2; j++) {
                 String value = resultValues.getOrDefault(rows[j][1], "—");
                 LinearLayout tile = new LinearLayout(this);
                 tile.setOrientation(LinearLayout.VERTICAL);
-                tile.setPadding(dp(11), dp(10), dp(8), dp(10));
-                tile.setBackground(rounded(PAPER, 8, LINE));
-                tile.addView(text(rows[j][0].toUpperCase(Locale.ROOT), 9, MUTED, true));
-                TextView metric = text(value, 15, INK, true);
+                tile.setPadding(dp(8), dp(8), dp(6), dp(8));
+                tile.setBackground(rounded(Color.rgb(27, 28, 32), 7, LINE));
+                tile.addView(text(rows[j][0], 8, MUTED, true));
+                TextView metric = text(value, 12, INK, true);
                 metric.setTypeface(monoTypeface);
-                tile.addView(metric, margins(0, 5, 0, 0));
+                metric.setMaxLines(2);
+                tile.addView(metric, margins(0, 4, 0, 0));
                 LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, -2, 1);
-                lp.setMargins(j == i ? 0 : dp(6), 0, j == i ? dp(6) : 0, dp(7));
+                lp.setMargins(j == i ? 0 : dp(5), 0, j == i ? dp(5) : 0, dp(5));
                 row.addView(tile, lp);
             }
             dashboardMetrics.addView(row);
@@ -540,8 +776,38 @@ public class MainActivity extends Activity {
         String broth = editors.containsKey("tBroth") ? editors.get("tBroth").getText().toString() : "—";
         String inlet = editors.containsKey("tIn") ? editors.get("tIn").getText().toString() : "—";
         String outlet = editors.containsKey("tOut") ? editors.get("tOut").getText().toString() : "—";
-        dashboardTemperature.setText("Temperatura del caldo  ·  " + broth + " °C");
-        dashboardTelemetry.setText("Refrigerante · entrada " + inlet + " °C  /  salida " + outlet + " °C\nEstado · " + resultValues.getOrDefault("Estado del caudal", "Listo para calcular"));
+        if (dashboardTelemetry != null) dashboardTelemetry.setText("CALDO " + broth + " °C     REFRIGERANTE " + inlet + " → " + outlet + " °C");
+        if (spacesRunMetrics != null) spacesRunMetrics.setText("Q̇ = " + resultValues.getOrDefault("Carga térmica total", "—") + "   ·   T caldo = " + broth + " °C");
+        String sufficiency = resultValues.getOrDefault("Suficiencia térmica instalada", "—");
+        if (dashboardBalanceLabel != null) dashboardBalanceLabel.setText("CAPACIDAD INSTALADA  /  SUFICIENCIA " + sufficiency);
+        if (dashboardBalanceMeter != null) {
+            try {
+                double ratio = Double.parseDouble(sufficiency.replace("×", "").replace(",", "").trim());
+                dashboardBalanceMeter.setProgress((int) Math.max(0, Math.min(200, Math.round(ratio * 100))));
+            } catch (Exception ignored) { dashboardBalanceMeter.setProgress(0); }
+        }
+        updateEnergyMetricLabels(resultsScreen);
+    }
+
+    private void updateEnergyMetricLabels(View view) {
+        if (view instanceof TextView && view.getTag() instanceof String) {
+            String tag = (String) view.getTag();
+            if (tag.startsWith("energy:")) ((TextView) view).setText(resultValues.getOrDefault(tag.substring(7), "—"));
+        } else if (view instanceof android.view.ViewGroup) {
+            android.view.ViewGroup group = (android.view.ViewGroup) view;
+            for (int i = 0; i < group.getChildCount(); i++) updateEnergyMetricLabels(group.getChildAt(i));
+        }
+        if (view == resultsScreen && energyCapacitySummary != null) {
+            String demand = resultValues.getOrDefault("Carga térmica total", "—");
+            String installed = resultValues.getOrDefault("Área instalada / capacidad térmica", "—");
+            String capacity = installed.contains("/") ? installed.substring(installed.indexOf('/') + 1).trim() : "—";
+            energyCapacitySummary.setText("Demanda " + demand + "  ·  Capacidad instalada " + capacity);
+            String sufficiency = resultValues.getOrDefault("Suficiencia térmica instalada", "");
+            try {
+                double ratio = Double.parseDouble(sufficiency.replace("×", "").replace(",", "").trim());
+                energyCapacityMeter.setProgress((int) Math.max(0, Math.min(200, Math.round(ratio * 100))));
+            } catch (Exception ignored) { energyCapacityMeter.setProgress(0); }
+        }
     }
 
     private void addMethodBlock(LinearLayout parent, String title, int accent, View... equations) {
@@ -662,7 +928,7 @@ public class MainActivity extends Activity {
 
     private void addNavigationItem(LinearLayout parent, String title, int accent, int destination) {
         Button button = new Button(this);
-        String[] icons = {"⌂", "▦", "◉", "⌁", "Σ"};
+        String[] icons = {"◉", "▦", "⌁", "⬡", "⌁", "Σ"};
         button.setText(icons[destination] + "\n" + title);
         button.setTextSize(8.5f);
         button.setTextColor(MUTED);
@@ -698,9 +964,68 @@ public class MainActivity extends Activity {
         Button explore = smallButton("Explorar modelo 3D  →");
         explore.setBackground(projected(TEAL));
         explore.setTextColor(ON_TEAL);
-        explore.setOnClickListener(v -> showScreen(2));
+        explore.setOnClickListener(v -> showScreen(3));
         module.addView(explore, margins(0, 8, 0, 0));
         parent.addView(module, margins(0, 0, 0, 4));
+    }
+
+    private void addEnergyProfileCard(LinearLayout parent) {
+        LinearLayout card = card();
+        card.setPadding(dp(12), dp(12), dp(12), dp(12));
+        LinearLayout heading = new LinearLayout(this);
+        heading.setGravity(Gravity.CENTER_VERTICAL);
+        TextView icon = text("ϟ", 17, TEAL, true);
+        icon.setGravity(Gravity.CENTER);
+        icon.setBackground(rounded(TEAL_SOFT, 7, null));
+        heading.addView(icon, new LinearLayout.LayoutParams(dp(34), dp(34)));
+        LinearLayout title = new LinearLayout(this);
+        title.setOrientation(LinearLayout.VERTICAL);
+        title.setPadding(dp(9), 0, 0, 0);
+        title.addView(text("Thermal Balance & Heat Transfer", 14, INK, true));
+        title.addView(text("LIVE · ENERGÍA, CAPACIDAD Y FUERZA IMPULSORA", 8, MUTED, true));
+        heading.addView(title, new LinearLayout.LayoutParams(0, -2, 1));
+        heading.addView(text("LOCAL", 8, Color.rgb(81, 222, 162), true));
+        card.addView(heading);
+
+        LinearLayout values = new LinearLayout(this);
+        values.setOrientation(LinearLayout.VERTICAL);
+        String[][] pairs = {{"Carga térmica neta", "Carga térmica total", "LMTD", "LMTD"},
+                {"Área exterior requerida", "Área exterior requerida", "Coeficiente global Uo", "Coeficiente global exterior"},
+                {"Capacidad instalada", "Área instalada / capacidad térmica", "Suficiencia térmica", "Suficiencia térmica instalada"}};
+        for (String[] pair : pairs) {
+            LinearLayout row = new LinearLayout(this);
+            for (int i = 0; i < 2; i++) {
+                LinearLayout tile = new LinearLayout(this);
+                tile.setOrientation(LinearLayout.VERTICAL);
+                tile.setPadding(dp(8), dp(8), dp(4), dp(8));
+                tile.setBackground(rounded(Color.rgb(26, 27, 30), 6, LINE));
+                tile.addView(text(pair[i * 2].toUpperCase(Locale.ROOT), 8, MUTED, true));
+                TextView value = text(resultValues.getOrDefault(pair[i * 2 + 1], "—"), 12, INK, true);
+                value.setTypeface(monoTypeface);
+                value.setTag("energy:" + pair[i * 2 + 1]);
+                tile.addView(value, margins(0, 4, 0, 0));
+                LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(0, -2, 1);
+                params.setMargins(i == 0 ? 0 : dp(6), dp(6), i == 0 ? dp(6) : 0, 0);
+                row.addView(tile, params);
+            }
+            values.addView(row);
+        }
+        card.addView(values, margins(0, 4, 0, 0));
+        card.addView(text("THERMAL CAPACITY  /  DEMAND", 8, MUTED, true), margins(1, 10, 0, 3));
+        energyCapacitySummary = text("Demanda —  ·  Capacidad instalada —", 10, INK, true);
+        energyCapacitySummary.setTypeface(monoTypeface);
+        card.addView(energyCapacitySummary, margins(1, 0, 0, 4));
+        energyCapacityMeter = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        energyCapacityMeter.setMax(200);
+        energyCapacityMeter.setProgressTintList(android.content.res.ColorStateList.valueOf(TEAL));
+        energyCapacityMeter.setProgressBackgroundTintList(android.content.res.ColorStateList.valueOf(Color.rgb(36, 49, 50)));
+        card.addView(energyCapacityMeter, new LinearLayout.LayoutParams(-1, dp(7)));
+        TextView calculationNote = text("Q metabólico + Q agitación + otras cargas → refrigerante → área y serpentín instalados", 10, MUTED, false);
+        calculationNote.setLineSpacing(dp(2), 1f);
+        calculationNote.setPadding(dp(9), dp(8), dp(9), dp(8));
+        calculationNote.setBackground(rounded(Color.rgb(26, 27, 30), 6, LINE));
+        card.addView(calculationNote, margins(0, 8, 0, 0));
+        parent.addView(card, margins(0, 0, 0, 10));
     }
 
     private LinearLayout addMetabolicBalanceCard(LinearLayout parent) {
@@ -863,33 +1188,26 @@ public class MainActivity extends Activity {
     private void addScreenHeader(LinearLayout screen, String title, String subtitle) {
         LinearLayout brand = new LinearLayout(this);
         brand.setGravity(Gravity.CENTER_VERTICAL);
-        brand.setPadding(dp(10), dp(8), dp(8), dp(8));
-        brand.setBackground(rounded(PAPER, 1, LINE));
-        TextView mark = text("TB", 17, INK, true);
+        brand.setPadding(dp(4), dp(3), dp(4), dp(7));
+        TextView mark = text("TB", 13, INK, true);
         mark.setGravity(Gravity.CENTER);
         mark.setTextColor(ON_TEAL);
-        mark.setBackground(rounded(TEAL, 14, null));
-        brand.addView(mark, new LinearLayout.LayoutParams(dp(42), dp(42)));
+        mark.setBackground(rounded(TEAL, 10, null));
+        brand.addView(mark, new LinearLayout.LayoutParams(dp(34), dp(34)));
         LinearLayout copy = new LinearLayout(this);
         copy.setOrientation(LinearLayout.VERTICAL);
-        copy.setPadding(dp(10), 0, 0, 0);
-        copy.addView(text("THERMABIO", 18, INK, true));
-        copy.addView(text("● SIN RED  ·  CÁLCULO LOCAL", 9, MUTED, true));
+        copy.setPadding(dp(9), 0, 0, 0);
+        copy.addView(text(subtitle.toUpperCase(Locale.ROOT), 8.5f, MUTED, true));
+        copy.addView(text(title, 15, INK, true));
         brand.addView(copy, new LinearLayout.LayoutParams(0, -2, 1));
-        screen.addView(brand, margins(0, 4, 0, 14));
-        TextView heading = text(title, 23, INK, true);
-        heading.setLineSpacing(dp(1), 1f);
-        heading.setPadding(dp(10), dp(9), dp(10), dp(9));
-        heading.setBackground(rounded(PAPER, 1, LINE));
-        screen.addView(heading, margins(0, 0, 0, 5));
-        TextView caption = text(subtitle, 10, MUTED, true);
-        caption.setTextColor(MUTED);
-        caption.setLetterSpacing(0.04f);
-        screen.addView(caption, margins(0, 0, 0, 16));
+        TextView status = text("●", 10, Color.rgb(81, 222, 162), true);
+        status.setPadding(dp(8), 0, dp(3), 0);
+        brand.addView(status);
+        screen.addView(brand, margins(0, 2, 0, 8));
     }
 
     private void showScreen(int screenIndex) {
-        if (screenIndex < 0 || screenIndex > 4) return;
+        if (screenIndex < 0 || screenIndex > 5) return;
         LinearLayout target = screenFor(screenIndex);
         LinearLayout current = screenFor(currentScreen);
         if (current == target) {
@@ -904,11 +1222,15 @@ public class MainActivity extends Activity {
             target.animate().alpha(1f).setDuration(150).start();
         }).start();
         currentScreen = screenIndex;
-        if (screenIndex == 2) {
+        FrameLayout.LayoutParams scrollParams = (FrameLayout.LayoutParams) scrollView.getLayoutParams();
+        scrollParams.bottomMargin = dp(screenIndex == 2 ? 148 : 90);
+        scrollView.setLayoutParams(scrollParams);
+        if (screenIndex == 2) showModelIn(modelPreviewFrame, true);
+        if (screenIndex == 3) {
             showModelIn(modelFullFrame, false);
             selectModelSection(0);
         }
-        if (screenIndex == 3) showModelIn(modelPreviewFrame, true);
+        if (calcActionContainer != null) calcActionContainer.setVisibility(screenIndex == 2 ? View.VISIBLE : View.GONE);
         for (int i = 0; i < navigationButtons.length; i++) {
             if (navigationButtons[i] != null) {
                 styleNavigationButton(navigationButtons[i], i == screenIndex);
@@ -917,10 +1239,11 @@ public class MainActivity extends Activity {
     }
 
     private LinearLayout screenFor(int index) {
-        if (index == 0) return dashboardScreen;
-        if (index == 1) return calculatorScreen;
-        if (index == 2) return modelScreen;
-        if (index == 3) return resultsScreen;
+        if (index == 0) return spacesScreen;
+        if (index == 1) return dashboardScreen;
+        if (index == 2) return calculatorScreen;
+        if (index == 3) return modelScreen;
+        if (index == 4) return resultsScreen;
         return methodologyScreen;
     }
 
@@ -1101,11 +1424,11 @@ public class MainActivity extends Activity {
         return "Propiedades, coeficientes y dimensiones del serpentín";
     }
 
-    private void addEditor(LinearLayout parent, Spec spec) {
+    private void addEditor(GridLayout parent, Spec spec) {
         LinearLayout cell = new LinearLayout(this);
         cell.setOrientation(LinearLayout.VERTICAL);
         TextView label = text(spec.label, 11.5f, INK, true);
-        label.setMinHeight(dp(34));
+        label.setMinHeight(dp(38));
         label.setLineSpacing(dp(1), 1f);
         cell.addView(label, margins(0, 2, 0, 4));
         LinearLayout row = new LinearLayout(this);
@@ -1113,7 +1436,7 @@ public class MainActivity extends Activity {
         row.setBackground(rounded(PAPER, 1, LINE));
         EditText edit = new EditText(this);
         edit.setSingleLine(true);
-        edit.setTextSize(15);
+        edit.setTextSize(14);
         edit.setTypeface(monoTypeface);
         edit.setTextColor(INK);
         edit.setSelectAllOnFocus(true);
@@ -1145,8 +1468,11 @@ public class MainActivity extends Activity {
             solve.setOnClickListener(v -> showMetabolicSolveDialog(spec.key));
             cell.addView(solve, margins(0, 4, 0, 2));
         }
-        LinearLayout.LayoutParams cellParams = new LinearLayout.LayoutParams(-1, -2);
-        cellParams.setMargins(dp(2), 0, dp(2), dp(12));
+        GridLayout.LayoutParams cellParams = new GridLayout.LayoutParams(
+                GridLayout.spec(GridLayout.UNDEFINED), GridLayout.spec(GridLayout.UNDEFINED, 1f));
+        cellParams.width = 0;
+        cellParams.height = -2;
+        cellParams.setMargins(dp(3), 0, dp(3), dp(9));
         parent.addView(cell, cellParams);
         edit.addTextChangedListener(new TextWatcher() {
             @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
